@@ -22,13 +22,13 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 0.8rem;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: 500;
+  font-family: 'Playfair Display', serif;
+  font-weight: 400;
   font-size: clamp(1rem, 7vw, 2.2rem);
   word-spacing: clamp(-0.6rem, -1vw, 0rem);
   white-space: nowrap;
   margin: 0 0 1rem 0;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+  /* text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3); */
 }
 
 .title-icon {

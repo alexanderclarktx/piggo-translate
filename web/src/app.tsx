@@ -188,6 +188,7 @@ const App = () => {
     }
   }, [])
 
+  // if input changes
   useEffect(() => {
     const trimmedText = inputText.trim()
 
@@ -211,7 +212,27 @@ const App = () => {
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [inputText, targetLanguage, selectedModel])
+  }, [inputText])
+
+  // if language changes
+  useEffect(() => {
+    const trimmedText = inputText.trim()
+
+    if (!trimmedText) {
+      setOutputText("")
+      setOutputTransliteration("")
+      setErrorText("")
+      setDebouncedRequest(null)
+      lastRequestedSignatureRef.current = ""
+      return
+    }
+
+    setDebouncedRequest({
+      text: trimmedText,
+      targetLanguage,
+      model: selectedModel
+    })
+  }, [targetLanguage])
 
   useEffect(() => {
     if (!debouncedRequest || !isSocketOpen || isTranslating) {
@@ -232,8 +253,8 @@ const App = () => {
     <main>
       <header>
         <h1>
+          <span>Wordy</span>
           <img src="/favicon.svg" alt="" aria-hidden="true" className="title-icon" />
-          <span>Piggo Translate</span>
         </h1>
       </header>
 
