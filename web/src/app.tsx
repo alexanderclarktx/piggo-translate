@@ -98,7 +98,7 @@ const App = () => {
         }}
       />
 
-      <section className="pane-grid" aria-label="Translator workspace">
+      <section className="pane-stack" aria-label="Translator workspace">
         <TextPane
           id="input-pane-title"
           title="Input"

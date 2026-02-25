@@ -128,11 +128,32 @@ main {
   color: #9d1d1d;
 }
 
-.pane-grid {
+.pane-stack {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-rows: minmax(10rem, 1fr) minmax(10rem, 1fr);
   min-height: 24rem;
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(16, 24, 32, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pane-stack .pane {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.pane-stack .pane + .pane {
+  border-top: 1px solid rgba(16, 24, 32, 0.12);
+}
+
+.pane-stack .pane-textarea {
+  min-height: 0;
+  resize: none;
 }
 
 .pane {
@@ -192,7 +213,4 @@ main {
     padding: 1rem;
   }
 
-  .pane-grid {
-    grid-template-columns: 1fr;
-  }
 }
