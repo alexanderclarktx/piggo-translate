@@ -1,9 +1,13 @@
 {
   "name": "@template/web",
+  "version": "0.1.1",
   "main": "./main.ts",
   "scripts": {
     "dev": "bun dev-compile & bun dev-serve",
     "dev-compile": "bun build --watch app.ts --outdir res",
     "dev-serve": "bun x serve -L -p 5000 res"
+  },
+  "dependencies": {
+    "@template/core": "0.1.1"
   }
 }

@@ -1,6 +1,6 @@
 import { formatUptime } from "@template/core"
 
-export function createApiServer() {
+export const createApiServer = () => {
   const server = Bun.serve({
     port: 5001,
     fetch(request) {
@@ -16,5 +16,9 @@ export function createApiServer() {
     }
   })
 
+  console.log(`API server running at ${server.hostname}:${server.port}`)
+
   return server
 }
+
+createApiServer()
