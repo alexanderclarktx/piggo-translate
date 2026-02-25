@@ -280,13 +280,13 @@ const App = () => {
         ) : null}
       </section>
 
-      <div className="pane-switch-row" aria-label="Model selection">
+      {/* <div className="pane-switch-row" aria-label="Model selection">
         <ModelSwitch
           className="output-pane-model-switch"
           selectedModel={selectedModel}
           onModelToggle={setSelectedModel}
         />
-      </div>
+      </div> */}
     </main>
   )
 }

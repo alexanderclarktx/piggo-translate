@@ -1,8 +1,7 @@
 import {
   formatUptime, TranslateModel, TranslateWsClientMessage, TranslateWsServerMessage
 } from "@template/core"
-import { AnthropicTranslator } from "./AnthropicTranslator"
-import { OpenAiTranslator } from "./OpenAiTranslator"
+import { AnthropicTranslator, OpenAiTranslator } from "@template/api"
 
 type TranslateRequestBody = {
   text: string
