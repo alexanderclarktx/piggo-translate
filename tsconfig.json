@@ -16,5 +16,5 @@
     "baseUrl": "."
   },
   "include": ["core/**/*", "web/**/*", "api/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "*/node_modules/*"]
 }
