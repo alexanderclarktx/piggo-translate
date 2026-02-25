@@ -8,7 +8,7 @@ import { TranslateToolbar } from "./components/TranslateToolbar"
 const languageOptions: LanguageOption[] = [
   { label: "English", value: "English" },
   { label: "Chinese", value: "Chinese (simplified)" },
-  { label: "French", value: "French" },
+  // { label: "French", value: "French" },
   { label: "Spanish", value: "Spanish" },
   // { label: "Italian", value: "Italian" },
   { label: "Japanese", value: "Japanese" },
