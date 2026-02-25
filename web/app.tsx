@@ -41,7 +41,7 @@ const App = () => {
     languageOptions[1]?.value || "Chinese (simplified)"
   )
 
-  const handleTranslate = async () => {
+  const handleTranslate = async (nextTargetLanguage = targetLanguage) => {
     const trimmedText = inputText.trim()
 
     if (!trimmedText || isTranslating) {
@@ -59,7 +59,7 @@ const App = () => {
         },
         body: JSON.stringify({
           text: trimmedText,
-          targetLanguage
+          targetLanguage: nextTargetLanguage
         })
       })
 
@@ -99,7 +99,14 @@ const App = () => {
                   data-selected={isSelected ? "true" : "false"}
                   type="button"
                   aria-pressed={isSelected}
-                  onClick={() => setTargetLanguage(option.value)}
+                  onClick={() => {
+                    if (isSelected) {
+                      return
+                    }
+
+                    setTargetLanguage(option.value)
+                    void handleTranslate(option.value)
+                  }}
                 >
                   {option.label}
                 </button>
@@ -111,7 +118,9 @@ const App = () => {
         <button
           className="translate-button"
           type="button"
-          onClick={handleTranslate}
+          onClick={() => {
+            void handleTranslate()
+          }}
           disabled={isTranslating || !inputText.trim()}
         >
           {isTranslating ? (
