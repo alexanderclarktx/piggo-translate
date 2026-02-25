@@ -21,6 +21,22 @@ type AnthropicMessageResponse = {
   }
 }
 
+type TranslationStructuredOutput = {
+  translation: string
+}
+
+const translationOutputSchema = {
+  type: "object",
+  properties: {
+    translation: {
+      type: "string",
+      description: "The translated text only, with no explanation"
+    }
+  },
+  required: ["translation"],
+  additionalProperties: false
+} as const
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,OPTIONS",
@@ -150,6 +166,42 @@ const parseWsJsonMessage = (message: string | Uint8Array | Buffer) => {
   return JSON.parse(rawText)
 }
 
+const parseStructuredTranslation = (content?: AnthropicMessageContentBlock[]) => {
+  const rawJson = content
+    ?.filter((block) => block.type === "text" && typeof block.text === "string")
+    .map((block) => block.text || "")
+    .join("")
+    .trim()
+
+  if (!rawJson) {
+    throw new Error("Anthropic returned an empty structured response")
+  }
+
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(rawJson)
+  } catch {
+    throw new Error("Anthropic returned invalid structured JSON")
+  }
+
+  const translation =
+    parsed &&
+    typeof parsed === "object" &&
+    "translation" in parsed &&
+    typeof parsed.translation === "string"
+      ? parsed.translation.trim()
+      : ""
+
+  if (!translation) {
+    throw new Error("Anthropic structured response missing 'translation'")
+  }
+
+  return {
+    translation
+  } satisfies TranslationStructuredOutput
+}
+
 const translateWithAnthropic = async (text: string, targetLanguage: string) => {
   const apiKey = process.env.ANTHROPIC_API_KEY
 
@@ -169,13 +221,19 @@ const translateWithAnthropic = async (text: string, targetLanguage: string) => {
       model,
       max_tokens: 64,
       system:
-        "You are a translation engine. Return only the translated text with no explanation.",
+        "You are a translation engine. Translate accurately and preserve meaning, tone, and formatting where possible.",
       messages: [
         {
           role: "user",
           content: `Translate the following text to ${targetLanguage}:\n\n${text}`
         }
-      ]
+      ],
+      output_config: {
+        format: {
+          type: "json_schema",
+          schema: translationOutputSchema
+        }
+      }
     })
   })
 
@@ -185,11 +243,7 @@ const translateWithAnthropic = async (text: string, targetLanguage: string) => {
     throw new Error(data.error?.message || "Anthropic request failed")
   }
 
-  const translatedText = data.content
-    ?.filter((block) => block.type === "text" && typeof block.text === "string")
-    .map((block) => block.text || "")
-    .join("")
-    .trim()
+  const translatedText = parseStructuredTranslation(data.content).translation
 
   if (!translatedText) {
     throw new Error("Anthropic returned an empty translation")
