@@ -36,6 +36,53 @@ main {
   align-items: center;
 }
 
+.language-picker {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.language-picker-label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #243443;
+}
+
+.language-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.language-bubble {
+  border: 1px solid rgba(16, 24, 32, 0.16);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  background: rgba(255, 255, 255, 0.75);
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.language-bubble:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.language-bubble[data-selected="true"] {
+  background: #0e6fd7;
+  border-color: #0e6fd7;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(14, 111, 215, 0.22);
+}
+
+.language-bubble:focus-visible {
+  outline: 2px solid #1f2937;
+  outline-offset: 2px;
+}
+
 .translate-button {
   width: fit-content;
   display: inline-flex;

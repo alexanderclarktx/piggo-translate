@@ -6,6 +6,22 @@ type TranslateResponse = {
   error?: string
 }
 
+type LanguageOption = {
+  label: string
+  value: string
+}
+
+const languageOptions: LanguageOption[] = [
+  { label: "English", value: "English" },
+  { label: "Chinese", value: "Chinese (simplified)" },
+  { label: "French", value: "French" },
+  { label: "Spanish", value: "Spanish" },
+  { label: "Italian", value: "Italian" },
+  { label: "Japanese", value: "Japanese" },
+  { label: "Korean", value: "Korean" },
+  { label: "Russian", value: "Russian" }
+]
+
 const getTranslateApiUrl = () => {
   const { protocol, hostname, port } = window.location
 
@@ -21,6 +37,9 @@ const App = () => {
   const [outputText, setOutputText] = useState("")
   const [errorText, setErrorText] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
+  const [targetLanguage, setTargetLanguage] = useState(
+    languageOptions[1]?.value || "Chinese (simplified)"
+  )
 
   const handleTranslate = async () => {
     const trimmedText = inputText.trim()
@@ -39,7 +58,8 @@ const App = () => {
           "content-type": "application/json"
         },
         body: JSON.stringify({
-          text: trimmedText
+          text: trimmedText,
+          targetLanguage
         })
       })
 
@@ -66,6 +86,28 @@ const App = () => {
       </header>
 
       <section className="toolbar" aria-label="Translation controls">
+        <div className="language-picker" role="group" aria-label="Target language">
+          <p className="language-picker-label">Target language</p>
+          <div className="language-bubbles">
+            {languageOptions.map((option) => {
+              const isSelected = option.value === targetLanguage
+
+              return (
+                <button
+                  key={option.label}
+                  className="language-bubble"
+                  data-selected={isSelected ? "true" : "false"}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => setTargetLanguage(option.value)}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         <button
           className="translate-button"
           type="button"
