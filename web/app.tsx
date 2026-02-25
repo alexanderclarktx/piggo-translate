@@ -1,9 +1,123 @@
+import { useState } from "react"
 import { createRoot } from "react-dom/client"
 
+type TranslateResponse = {
+  text?: string
+  error?: string
+}
+
+const getTranslateApiUrl = () => {
+  const { protocol, hostname, port } = window.location
+
+  if (port === "5000") {
+    return `${protocol}//${hostname}:5001/api/translate`
+  }
+
+  return "/api/translate"
+}
+
 const App = () => {
+  const [inputText, setInputText] = useState("")
+  const [outputText, setOutputText] = useState("")
+  const [errorText, setErrorText] = useState("")
+  const [isTranslating, setIsTranslating] = useState(false)
+
+  const handleTranslate = async () => {
+    const trimmedText = inputText.trim()
+
+    if (!trimmedText || isTranslating) {
+      return
+    }
+
+    setErrorText("")
+    setIsTranslating(true)
+
+    try {
+      const response = await fetch(getTranslateApiUrl(), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          text: trimmedText
+        })
+      })
+
+      const data = (await response.json()) as TranslateResponse
+
+      if (!response.ok) {
+        throw new Error(data.error || "Translation failed")
+      }
+
+      setOutputText(data.text || "")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Translation failed"
+      setErrorText(message)
+    } finally {
+      setIsTranslating(false)
+    }
+  }
+
   return (
     <main>
-      <h1>AI Translator</h1>
+      <header>
+        <h1>AI Translator</h1>
+      </header>
+
+      <section className="toolbar" aria-label="Translation controls">
+        <button
+          className="translate-button"
+          type="button"
+          onClick={handleTranslate}
+          disabled={isTranslating || !inputText.trim()}
+        >
+          {isTranslating ? (
+            <>
+              <span className="spinner" aria-hidden="true" />
+              Translating...
+            </>
+          ) : (
+            "Translate"
+          )}
+        </button>
+
+        {errorText ? (
+          <p className="status-text status-text-error" role="status">
+            {errorText}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="pane-grid" aria-label="Translator workspace">
+        <section className="pane" aria-labelledby="input-pane-title">
+          <div className="pane-header">
+            <h2 id="input-pane-title">Input</h2>
+          </div>
+
+          <textarea
+            className="pane-textarea"
+            placeholder="Type or paste text to translate"
+            aria-label="Text to translate"
+            value={inputText}
+            onChange={(event) => setInputText(event.target.value)}
+          />
+        </section>
+
+        <section className="pane" aria-labelledby="output-pane-title">
+          <div className="pane-header">
+            <h2 id="output-pane-title">Translated Output</h2>
+          </div>
+
+          <textarea
+            className="pane-textarea"
+            placeholder="Translation will appear here"
+            aria-label="Translated text"
+            value={outputText}
+            readOnly
+          />
+        </section>
+      </section>
     </main>
   )
 }
