@@ -250,6 +250,8 @@ const App = () => {
           onChange={setInputText}
         />
 
+        <div aria-hidden="true" style={{ height: "1px", background: "transparent" }} />
+
         <TextPane
           id="output-pane-title"
           title="Translated Output"

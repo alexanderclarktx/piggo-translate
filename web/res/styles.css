@@ -144,22 +144,19 @@ main {
 
 .pane-stack {
   display: grid;
-  grid-template-rows: minmax(10rem, 1fr) minmax(10rem, 1fr);
+  grid-template-rows: minmax(10rem, 1fr) 8px minmax(10rem, 1fr);
   min-height: 24rem;
   width: 100%;
   max-width: 600px;
   margin-inline: auto;
   position: relative;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(16, 24, 32, 0.12);
-  border-radius: 10px;
   overflow: hidden;
 }
 
 .pane-stack .pane {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(16, 24, 32, 0.12);
+  border-radius: 10px;
 }
 
 .pane-stack .pane + .pane {
