@@ -68,9 +68,12 @@ main {
 
 .language-bubbles {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 0.45rem;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(16, 24, 32, 0.12);
 }
 
 .language-bubble {
@@ -80,7 +83,10 @@ main {
   background: rgba(255, 255, 255, 0.75);
   color: inherit;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 100%;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
   cursor: pointer;
   transition: background-color 180ms ease-out, border-color 180ms ease-out,
     box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -94,8 +100,8 @@ main {
 }
 
 .language-bubble[data-selected="true"] {
-  background: #0e6fd7;
-  border-color: #0e6fd7;
+  background: #3786da;
+  border-color: #3786da;
   color: #ffffff;
   box-shadow: 0 4px 10px rgba(14, 111, 215, 0.22);
 }
