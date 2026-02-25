@@ -17,7 +17,20 @@ body {
 }
 
 h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 500;
   margin: 0 0 1rem 0;
+}
+
+.title-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  display: block;
+  flex-shrink: 0;
 }
 
 h2 {

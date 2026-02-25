@@ -221,10 +221,13 @@ const App = () => {
   }, [debouncedRequest, isSocketOpen, isTranslating])
 
   return (
-    <main>
-      <header>
-        <h1>AI Translator</h1>
-      </header>
+      <main>
+        <header>
+          <h1>
+            <img src="/favicon.svg" alt="" aria-hidden="true" className="title-icon" />
+            <span>Piggo Translate</span>
+          </h1>
+        </header>
 
       <TranslateToolbar
         errorText={errorText}
