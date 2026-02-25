@@ -242,7 +242,8 @@ const App = () => {
         <TextPane
           id="input-pane-title"
           title="Input"
-          placeholder="Type or paste text to translate"
+          showHeader={false}
+          placeholder=""
           ariaLabel="Text to translate"
           value={inputText}
           onChange={setInputText}
@@ -251,7 +252,8 @@ const App = () => {
         <TextPane
           id="output-pane-title"
           title="Translated Output"
-          placeholder="Translation will appear here"
+          showHeader={false}
+          placeholder="translation"
           ariaLabel="Translated text"
           value={outputText}
           readOnly

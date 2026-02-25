@@ -6,16 +6,23 @@ type TextPaneProps = {
   value: string
   readOnly?: boolean
   onChange?: (value: string) => void
+  showHeader?: boolean
 }
 
 const TextPane = ({
-  id, title, placeholder, ariaLabel, value, readOnly = false, onChange
+  id, title, placeholder, ariaLabel, value, readOnly = false, onChange, showHeader = true
 }: TextPaneProps) => {
   return (
-    <section className="pane" aria-labelledby={id}>
-      <div className="pane-header">
-        <h2 id={id}>{title}</h2>
-      </div>
+    <section
+      className={showHeader ? "pane" : "pane pane-no-header"}
+      aria-labelledby={showHeader ? id : undefined}
+      aria-label={showHeader ? undefined : ariaLabel}
+    >
+      {showHeader ? (
+        <div className="pane-header">
+          <h2 id={id}>{title}</h2>
+        </div>
+      ) : null}
 
       <textarea
         className="pane-textarea"

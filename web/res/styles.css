@@ -189,6 +189,10 @@ main {
   overflow: hidden;
 }
 
+.pane-no-header {
+  grid-template-rows: 1fr;
+}
+
 .pane-header {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid rgba(16, 24, 32, 0.12);
