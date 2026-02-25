@@ -27,6 +27,10 @@ const App = () => {
   const [errorText, setErrorText] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
   const [isSocketOpen, setIsSocketOpen] = useState(false)
+  const [debouncedRequest, setDebouncedRequest] = useState<{
+    text: string
+    targetLanguage: string
+  } | null>(null)
   const [targetLanguage, setTargetLanguage] = useState(languageOptions[1].value)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutIdRef = useRef<number | null>(null)
@@ -34,11 +38,18 @@ const App = () => {
   const latestRequestIdRef = useRef("")
   const lastRequestedSignatureRef = useRef("")
 
-  const sendTranslateRequest = (nextTargetLanguage = targetLanguage) => {
-    const trimmedText = inputText.trim()
+  const sendTranslateRequest = (requestInput: {
+    text: string
+    targetLanguage: string
+  }) => {
     const socket = socketRef.current
 
-    if (!trimmedText || isTranslating || !socket || socket.readyState !== WebSocket.OPEN) {
+    if (
+      !requestInput.text ||
+      isTranslating ||
+      !socket ||
+      socket.readyState !== WebSocket.OPEN
+    ) {
       return
     }
 
@@ -48,18 +59,18 @@ const App = () => {
     setErrorText("")
     setIsTranslating(true)
     latestRequestIdRef.current = requestId
-    lastRequestedSignatureRef.current = `${trimmedText}::${nextTargetLanguage}`
+    lastRequestedSignatureRef.current = `${requestInput.text}::${requestInput.targetLanguage}`
 
     const request: TranslateWsRequestMessage = {
       type: "translate.request",
       requestId,
-      text: trimmedText,
-      targetLanguage: nextTargetLanguage
+      text: requestInput.text,
+      targetLanguage: requestInput.targetLanguage
     }
 
-    socket.send(JSON.stringify(request))
+    console.log("Sending translate request", request)
 
-    console.log("Sent translate request", request)
+    socket.send(JSON.stringify(request))
   }
 
   useEffect(() => {
@@ -178,28 +189,36 @@ const App = () => {
     if (!trimmedText) {
       setOutputText("")
       setErrorText("")
+      setDebouncedRequest(null)
       lastRequestedSignatureRef.current = ""
       return
     }
 
-    const nextSignature = `${trimmedText}::${targetLanguage}`
-
-    if (
-      !isSocketOpen ||
-      isTranslating ||
-      lastRequestedSignatureRef.current === nextSignature
-    ) {
-      return
-    }
-
     const timeoutId = window.setTimeout(() => {
-      sendTranslateRequest()
-    }, 100)
+      setDebouncedRequest({
+        text: trimmedText,
+        targetLanguage
+      })
+    }, 400)
 
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [inputText, targetLanguage, isTranslating, isSocketOpen])
+  }, [inputText, targetLanguage])
+
+  useEffect(() => {
+    if (!debouncedRequest || !isSocketOpen || isTranslating) {
+      return
+    }
+
+    const nextSignature = `${debouncedRequest.text}::${debouncedRequest.targetLanguage}`
+
+    if (lastRequestedSignatureRef.current === nextSignature) {
+      return
+    }
+
+    sendTranslateRequest(debouncedRequest)
+  }, [debouncedRequest, isSocketOpen, isTranslating])
 
   return (
     <main>
