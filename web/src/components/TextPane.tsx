@@ -9,13 +9,7 @@ type TextPaneProps = {
 }
 
 const TextPane = ({
-  id,
-  title,
-  placeholder,
-  ariaLabel,
-  value,
-  readOnly = false,
-  onChange
+  id, title, placeholder, ariaLabel, value, readOnly = false, onChange
 }: TextPaneProps) => {
   return (
     <section className="pane" aria-labelledby={id}>

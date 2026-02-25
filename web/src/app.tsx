@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
+import type { TranslateWsRequestMessage, TranslateWsServerMessage } from "@template/core"
 import type { LanguageOption } from "./components/LanguagePicker"
 import { TextPane } from "./components/TextPane"
 import { TranslateToolbar } from "./components/TranslateToolbar"
-
-type TranslateResponse = {
-  text?: string
-  error?: string
-}
 
 const languageOptions: LanguageOption[] = [
   { label: "English", value: "English" },
@@ -20,14 +16,9 @@ const languageOptions: LanguageOption[] = [
   { label: "Russian", value: "Russian" }
 ]
 
-const getTranslateApiUrl = () => {
-  const { protocol, hostname, port } = window.location
-
-  if (port === "5000") {
-    return `${protocol}//${hostname}:5001/api/translate`
-  }
-
-  return "/api/translate"
+const getTranslateWsUrl = () => {
+  const { hostname } = window.location
+  return `ws://${hostname}:5001/api/ws`
 }
 
 const App = () => {
@@ -35,49 +26,151 @@ const App = () => {
   const [outputText, setOutputText] = useState("")
   const [errorText, setErrorText] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
-  const [targetLanguage, setTargetLanguage] = useState(
-    languageOptions[1]?.value || "Chinese (simplified)"
-  )
+  const [isSocketOpen, setIsSocketOpen] = useState(false)
+  const [targetLanguage, setTargetLanguage] = useState(languageOptions[1].value)
+  const socketRef = useRef<WebSocket | null>(null)
+  const reconnectTimeoutIdRef = useRef<number | null>(null)
+  const requestCounterRef = useRef(0)
+  const latestRequestIdRef = useRef("")
   const lastRequestedSignatureRef = useRef("")
 
-  const handleTranslate = async (nextTargetLanguage = targetLanguage) => {
+  const sendTranslateRequest = (nextTargetLanguage = targetLanguage) => {
     const trimmedText = inputText.trim()
+    const socket = socketRef.current
 
-    if (!trimmedText || isTranslating) {
+    if (!trimmedText || isTranslating || !socket || socket.readyState !== WebSocket.OPEN) {
       return
     }
 
+    requestCounterRef.current += 1
+    const requestId = `${Date.now()}-${requestCounterRef.current}`
+
     setErrorText("")
     setIsTranslating(true)
+    latestRequestIdRef.current = requestId
     lastRequestedSignatureRef.current = `${trimmedText}::${nextTargetLanguage}`
 
-    try {
-      const response = await fetch(getTranslateApiUrl(), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          text: trimmedText,
-          targetLanguage: nextTargetLanguage
-        })
-      })
+    const request: TranslateWsRequestMessage = {
+      type: "translate.request",
+      requestId,
+      text: trimmedText,
+      targetLanguage: nextTargetLanguage
+    }
 
-      const data = (await response.json()) as TranslateResponse
+    socket.send(JSON.stringify(request))
 
-      if (!response.ok) {
-        throw new Error(data.error || "Translation failed")
+    console.log("Sent translate request", request)
+  }
+
+  useEffect(() => {
+    let isDisposed = false
+
+    const clearReconnectTimeout = () => {
+      if (reconnectTimeoutIdRef.current === null) {
+        return
       }
 
-      setOutputText(data.text || "")
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Translation failed"
-      setErrorText(message)
-    } finally {
-      setIsTranslating(false)
+      window.clearTimeout(reconnectTimeoutIdRef.current)
+      reconnectTimeoutIdRef.current = null
     }
-  }
+
+    const connectSocket = () => {
+      clearReconnectTimeout()
+
+      const socket = new WebSocket(getTranslateWsUrl())
+      socketRef.current = socket
+      setIsSocketOpen(false)
+
+      socket.addEventListener("open", () => {
+        if (isDisposed || socketRef.current !== socket) {
+          return
+        }
+
+        setIsSocketOpen(true)
+        setErrorText("")
+      })
+
+      socket.addEventListener("message", (event) => {
+        if (isDisposed || socketRef.current !== socket) {
+          return
+        }
+
+        let message: TranslateWsServerMessage
+
+        try {
+          message = JSON.parse(event.data) as TranslateWsServerMessage
+        } catch (error) {
+          setIsTranslating(false)
+          setErrorText("Invalid websocket response")
+          return
+        }
+
+        if (message.type === "ready") {
+          return
+        }
+
+        if (
+          message.requestId &&
+          latestRequestIdRef.current &&
+          message.requestId !== latestRequestIdRef.current
+        ) {
+          return
+        }
+
+        setIsTranslating(false)
+
+        if (message.type === "translate.success") {
+          setOutputText(message.text)
+          setErrorText("")
+          return
+        }
+
+        setErrorText(message.error || "Translation failed")
+      })
+
+      socket.addEventListener("error", () => {
+        if (isDisposed || socketRef.current !== socket) {
+          return
+        }
+
+        setIsSocketOpen(false)
+      })
+
+      socket.addEventListener("close", () => {
+        if (socketRef.current === socket) {
+          socketRef.current = null
+        }
+
+        if (isDisposed) {
+          return
+        }
+
+        setIsSocketOpen(false)
+        setIsTranslating(false)
+        lastRequestedSignatureRef.current = ""
+        reconnectTimeoutIdRef.current = window.setTimeout(() => {
+          connectSocket()
+        }, 500)
+      })
+    }
+
+    connectSocket()
+
+    return () => {
+      isDisposed = true
+      clearReconnectTimeout()
+
+      const socket = socketRef.current
+      socketRef.current = null
+      setIsSocketOpen(false)
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close()
+      } else if (socket) {
+        socket.close()
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const trimmedText = inputText.trim()
@@ -91,18 +184,22 @@ const App = () => {
 
     const nextSignature = `${trimmedText}::${targetLanguage}`
 
-    if (isTranslating || lastRequestedSignatureRef.current === nextSignature) {
+    if (
+      !isSocketOpen ||
+      isTranslating ||
+      lastRequestedSignatureRef.current === nextSignature
+    ) {
       return
     }
 
     const timeoutId = window.setTimeout(() => {
-      void handleTranslate()
-    }, 450)
+      sendTranslateRequest()
+    }, 100)
 
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [inputText, targetLanguage, isTranslating])
+  }, [inputText, targetLanguage, isTranslating, isSocketOpen])
 
   return (
     <main>
