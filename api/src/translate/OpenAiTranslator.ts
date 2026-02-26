@@ -114,7 +114,7 @@ export const OpenAiTranslator = (): Translator => ({
             type: "response.create",
             response: {
               modalities: ["text"],
-              max_output_tokens: 256,
+              max_output_tokens: 1024,
               instructions:
                 "You are a translation engine. Translate accurately and preserve meaning, tone, and formatting where possible."
             }

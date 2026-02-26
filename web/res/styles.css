@@ -237,14 +237,16 @@ main {
 }
 
 .pane-stack {
-  display: grid;
-  grid-template-rows: minmax(10rem, 1fr) 8px minmax(10rem, 1fr);
-  min-height: 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
   max-width: 600px;
-  margin-inline: auto;
-  position: relative;
-  overflow: hidden;
+  position: fixed;
+  left: 50%;
+  top: 50vh;
+  transform: translate(-50%, -50%);
+  z-index: 1;
 }
 
 .pane-stack .pane {
@@ -253,12 +255,9 @@ main {
   border-radius: 10px;
 }
 
-.pane-stack .pane + .pane {
-  border-top: 1px solid rgba(16, 24, 32, 0.12);
-}
-
 .pane-stack .pane-textarea {
-  min-height: 0;
+  min-height: 8rem;
+  overflow: hidden;
   resize: none;
 }
 
@@ -275,13 +274,12 @@ main {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 10px;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .pane-no-header {
-  grid-template-rows: 1fr;
+  display: flex;
 }
 
 .pane-header {
@@ -294,7 +292,7 @@ main {
   box-sizing: border-box;
   width: 100%;
   min-height: 18rem;
-  resize: vertical;
+  resize: none;
   border: 0;
   background: transparent;
   padding: 1rem;

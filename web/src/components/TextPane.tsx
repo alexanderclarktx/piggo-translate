@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+import { ReactNode, useLayoutEffect, useRef } from "react"
 
 type TextPaneProps = {
   id: string
@@ -16,6 +16,19 @@ type TextPaneProps = {
 const TextPane = ({
   id, title, placeholder, ariaLabel, value, footer, readOnly, autoFocus, onChange, showHeader
 }: TextPaneProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current
+
+    if (!textarea) {
+      return
+    }
+
+    textarea.style.height = "0px"
+    textarea.style.height = `${textarea.scrollHeight}px`
+  }, [value])
+
   return (
     <section
       className={showHeader ? "pane" : "pane pane-no-header"}
@@ -29,6 +42,7 @@ const TextPane = ({
       ) : null}
 
       <textarea
+        ref={textareaRef}
         className="pane-textarea"
         placeholder={placeholder}
         aria-label={ariaLabel}
