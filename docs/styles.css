@@ -1,7 +1,7 @@
 :root {
   font-family: "Helvetica Neue", Arial, sans-serif;
-  font-size: 19px;
-  background-color: #fff9df;
+  font-size: 22px;
+  background-color: #27252b;
   color: #1c2024;
 }
 
@@ -22,12 +22,34 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 0.8rem;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Courier New', monospace;
   font-weight: 400;
   font-size: 1.9rem;
+  text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   margin: 0 0 1rem 0;
   user-select: none;
+  color: white;
+  transition: color 500ms ease, opacity 500ms ease;
+  animation: title-fade-in 500ms ease-out both;
+}
+
+@keyframes title-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  h1 {
+    animation: none;
+  }
 }
 
 .title-icon {
@@ -66,7 +88,7 @@ main {
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background-color 160ms ease-out, box-shadow 180ms ease-out,
+  transition: background-color 160ms ease-out, box-shadow 500ms ease-out,
     transform 160ms ease-out;
 }
 
@@ -157,7 +179,7 @@ main {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 180ms ease-out, border-color 180ms ease-out,
+  transition: background-color 500ms ease-out, border-color 500ms ease-out,
     box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -194,7 +216,7 @@ main {
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 6px 14px rgba(14, 111, 215, 0.28);
-  transition: background-color 180ms ease-out,
+  transition: background-color 500ms ease-out,
     box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -236,29 +258,31 @@ main {
 }
 
 .pane-stack {
-  display: grid;
-  grid-template-rows: minmax(10rem, 1fr) 8px minmax(10rem, 1fr);
-  min-height: 24rem;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  width: calc(100vw - 4rem);
   max-width: 600px;
-  margin-inline: auto;
-  position: relative;
-  overflow: hidden;
+  position: fixed;
+  left: 50%;
+  top: 50vh;
+  transform: translate(-50%, -50%);
+  z-index: 1;
 }
 
 .pane-stack .pane {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 10px;
-}
-
-.pane-stack .pane + .pane {
-  border-top: 1px solid rgba(16, 24, 32, 0.12);
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease;
 }
 
 .pane-stack .pane-textarea {
   min-height: 0;
+  overflow: hidden;
   resize: none;
+  transition: height 500ms ease;
 }
 
 .pane-stack-spinner {
@@ -274,13 +298,28 @@ main {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 10px;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
 .pane-no-header {
-  grid-template-rows: 1fr;
+  display: flex;
+}
+
+.pane-transparent {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.pane-transparent .pane-textarea[readonly] {
+  background: transparent;
+}
+
+.pane-transparent .pane-footer {
+  background: transparent;
+  border-top-color: transparent;
 }
 
 .pane-header {
@@ -290,9 +329,10 @@ main {
 }
 
 .pane-textarea {
+  box-sizing: border-box;
   width: 100%;
-  min-height: 18rem;
-  resize: vertical;
+  min-height: 0;
+  resize: none;
   border: 0;
   background: transparent;
   padding: 1rem;
@@ -300,6 +340,8 @@ main {
   color: inherit;
   line-height: 1.45;
   outline: none;
+  overflow: hidden;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
 .pane-textarea::placeholder {
@@ -316,13 +358,97 @@ main {
   border-top: 1px solid rgba(16, 24, 32, 0.08);
   background: rgba(255, 255, 255, 0.18);
   padding: 0.65rem 1rem 0.75rem;
+  min-width: 0;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+}
+
+.transliteration-box {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #3c3519;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.transliteration-box:hover {
+  background: rgba(60, 53, 25, 0.06);
+}
+
+.transliteration-box:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+.transliteration-box:focus-visible {
+  outline: 2px solid rgba(60, 53, 25, 0.35);
+  outline-offset: 2px;
+}
+
+.transliteration-box.is-collapsed {
+  padding: 0.1rem 0;
+}
+
+.transliteration-collapsed-label {
+  display: block;
+  color: #5f5230;
+  font-size: 0.84rem;
+  min-height: 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  text-align: center;
+  transition: max-height 500ms ease, opacity 350ms ease, padding 500ms ease;
+}
+
+.transliteration-collapsed-label.is-visible {
+  min-height: 0.5em;
+  max-height: 2rem;
+  opacity: 1;
+  padding: 0.1rem 0;
 }
 
 .transliteration-text {
   margin: 0;
-  color: #6b7280;
+  color: #3c3519;
   font-size: 0.92rem;
   line-height: 1.35;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+}
+
+.transliteration-panel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-color: transparent;
+  /* transition: max-height 500ms ease, opacity 350ms ease, padding 500ms ease, border-color 500ms ease, background-color 500ms ease; */
+}
+
+.transliteration-panel.is-visible {
+  max-height: 10rem;
+  opacity: 1;
+  padding-top: 0.65rem;
+  padding-bottom: 0.75rem;
+  border-top-color: rgba(16, 24, 32, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pane,
+  .pane-stack .pane,
+  .pane-stack .pane-textarea,
+  .pane-footer,
+  .transliteration-collapsed-label,
+  .transliteration-panel {
+    transition: none;
+  }
 }
 
 .pane-switch-row {
