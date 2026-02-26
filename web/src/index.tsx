@@ -63,6 +63,7 @@ const App = () => {
   const currentNormalizedInputTextRef = useRef("")
   const lastRequestedSignatureRef = useRef("")
   const normalizedInputText = normalizeText(inputText)
+  const hasInputText = !!inputText.trim()
   const isSpinnerVisible =
     isTranslating &&
     !!latestRequestSnapshot.id &&
@@ -153,6 +154,14 @@ const App = () => {
         }
 
         if (message.type === "ready") {
+          return
+        }
+
+        if (
+          !latestRequestRef.current.id ||
+          !latestRequestRef.current.normalizedInputText ||
+          !currentNormalizedInputTextRef.current
+        ) {
           return
         }
 
@@ -330,22 +339,22 @@ const App = () => {
           id="output-pane-title"
           title="Translated Output"
           showHeader={false}
-          className={inputText.trim() ? undefined : "pane-transparent"}
+          className={hasInputText ? undefined : "pane-transparent"}
           placeholder=""
           ariaLabel="Translated text"
-          value={outputText}
+          value={hasInputText ? outputText : ""}
           autoFocus={false}
-          footer={
+          footer={hasInputText ? (
             <Transliteration
               value={outputTransliteration}
               isVisible={isTransliterationVisible}
               onToggle={() => setIsTransliterationVisible((value) => !value)}
             />
-          }
+          ) : null}
           readOnly
         />
 
-        {isSpinnerVisible ? (
+        {hasInputText && isSpinnerVisible ? (
           <span className="spinner pane-stack-spinner" aria-hidden="true" />
         ) : null}
       </section>
