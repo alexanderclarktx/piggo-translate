@@ -5,4 +5,4 @@ node_modules/
 
 /dist
 
-web/res/app.js
+web/res/index.js
