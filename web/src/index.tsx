@@ -252,21 +252,21 @@ const App = () => {
 
   return (
     <main>
-      <header>
+      {/* <header>
         <h1>
           <span>Wordy</span>
           <img src="/favicon.svg" alt="" aria-hidden="true" className="title-icon" />
         </h1>
-      </header>
+      </header> */}
 
-      <TranslateToolbar
+      {/* <TranslateToolbar
         errorText={errorText}
         languageOptions={languageOptions}
         targetLanguage={targetLanguage}
         onLanguageSelect={(language) => {
           setTargetLanguage(language)
         }}
-      />
+      /> */}
 
       <section className="pane-stack" aria-label="Translator workspace">
         <TextPane

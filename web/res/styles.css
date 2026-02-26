@@ -257,7 +257,7 @@ main {
 }
 
 .pane-stack .pane-textarea {
-  min-height: 8rem;
+  min-height: 0;
   overflow: hidden;
   resize: none;
 }
@@ -293,7 +293,7 @@ main {
 .pane-textarea {
   box-sizing: border-box;
   width: 100%;
-  min-height: 18rem;
+  min-height: 0;
   resize: none;
   border: 0;
   background: transparent;
@@ -302,6 +302,7 @@ main {
   color: inherit;
   line-height: 1.45;
   outline: none;
+  overflow: hidden;
 }
 
 .pane-textarea::placeholder {

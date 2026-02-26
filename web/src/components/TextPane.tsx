@@ -44,6 +44,7 @@ const TextPane = ({
       <textarea
         ref={textareaRef}
         className="pane-textarea"
+        rows={1}
         placeholder={placeholder}
         aria-label={ariaLabel}
         value={value}
