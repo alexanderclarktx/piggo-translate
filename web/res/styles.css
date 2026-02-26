@@ -380,8 +380,42 @@ main {
   cursor: text;
 }
 
+.pane-text-content-selectable ::selection {
+  background: transparent;
+}
+
 .pane-text-token {
+  border-radius: 0.2rem;
   cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.pane-text-token:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.pane-text-token:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.32);
+  outline-offset: 1px;
+}
+
+.pane-text-token-selected {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0;
+}
+
+.pane-text-token-selected-start {
+  border-top-left-radius: 0.2rem;
+  border-bottom-left-radius: 0.2rem;
+}
+
+.pane-text-token-selected-end {
+  border-top-right-radius: 0.2rem;
+  border-bottom-right-radius: 0.2rem;
+}
+
+.pane-text-token-space {
+  cursor: text;
 }
 
 .pane-footer {

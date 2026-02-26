@@ -130,11 +130,51 @@ const TextPane = ({
       return
     }
 
+    const updateSelectedTokenStyles = (range: Range | null) => {
+      const contentElement = textContentRef.current
+
+      if (!contentElement) {
+        return
+      }
+
+      const tokenElements = Array.from(contentElement.querySelectorAll<HTMLSpanElement>(".pane-text-token"))
+      tokenElements.forEach((tokenElement) => {
+        tokenElement.classList.remove("pane-text-token-selected")
+        tokenElement.classList.remove("pane-text-token-selected-start")
+        tokenElement.classList.remove("pane-text-token-selected-end")
+      })
+
+      if (!range || range.collapsed) {
+        return
+      }
+
+      tokenElements.forEach((tokenElement) => {
+        if (range.intersectsNode(tokenElement)) {
+          tokenElement.classList.add("pane-text-token-selected")
+        }
+      })
+
+      tokenElements.forEach((tokenElement, tokenIndex) => {
+        const isSelected = tokenElement.classList.contains("pane-text-token-selected")
+        const isPreviousSelected = tokenElements[tokenIndex - 1]?.classList.contains("pane-text-token-selected")
+        const isNextSelected = tokenElements[tokenIndex + 1]?.classList.contains("pane-text-token-selected")
+
+        if (isSelected && !isPreviousSelected) {
+          tokenElement.classList.add("pane-text-token-selected-start")
+        }
+
+        if (isSelected && !isNextSelected) {
+          tokenElement.classList.add("pane-text-token-selected-end")
+        }
+      })
+    }
+
     const handleSelectionChange = () => {
       const contentElement = textContentRef.current
       const selection = window.getSelection()
 
       if (!contentElement || !selection || selection.rangeCount === 0) {
+        updateSelectedTokenStyles(null)
         lastSelectionRef.current = ""
         return
       }
@@ -145,8 +185,12 @@ const TextPane = ({
         contentElement.contains(range.endContainer)
 
       if (!isSelectionInsideText) {
+        updateSelectedTokenStyles(null)
+        lastSelectionRef.current = ""
         return
       }
+
+      updateSelectedTokenStyles(range)
 
       const nextSelection = selection.toString()
 
@@ -198,15 +242,18 @@ const TextPane = ({
           aria-label={ariaLabel}
         >
           {selectableTokens.map((token, tokenIndex) => {
-            if (!token.trim()) {
-              return token
-            }
+            const isWhitespaceToken = !token.trim()
+            const tokenClassName = isWhitespaceToken ? "pane-text-token pane-text-token-space" : "pane-text-token"
 
             return (
               <span
                 key={`${token}-${tokenIndex}`}
-                className="pane-text-token"
+                className={tokenClassName}
                 onClick={(event) => {
+                  if (isWhitespaceToken) {
+                    return
+                  }
+
                   selectToken(event.currentTarget)
                 }}
               >
