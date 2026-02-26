@@ -139,7 +139,6 @@ const App = () => {
         if (message.type === "translate.success") {
           setOutputText(message.text)
           setOutputTransliteration(message.transliteration)
-          setIsTransliterationVisible(true)
           setErrorText("")
           return
         }
