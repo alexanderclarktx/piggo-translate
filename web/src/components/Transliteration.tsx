@@ -5,20 +5,39 @@ type TransliterationProps = {
 }
 
 const Transliteration = ({ value, isVisible, onToggle }: TransliterationProps) => {
+  const hasValue = Boolean(value)
+  const isExpanded = hasValue && isVisible
+
   return (
     <button
       type="button"
-      className={`transliteration-box${isVisible ? "" : " is-collapsed"}`}
-      aria-label={isVisible ? "Hide transliteration" : "Show transliteration"}
-      aria-expanded={isVisible}
+      className={`transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""}`}
+      aria-label={
+        !hasValue
+          ? "No transliteration available"
+          : isExpanded
+            ? "Hide transliteration"
+            : "Show transliteration"
+      }
+      aria-expanded={isExpanded}
+      aria-hidden={!hasValue}
+      disabled={!hasValue}
       onClick={onToggle}
-      title={isVisible ? "Click to collapse transliteration" : "Click to expand transliteration"}
+      title={
+        !hasValue
+          ? "No transliteration available"
+          : isExpanded
+            ? "Click to collapse transliteration"
+            : "Click to expand transliteration"
+      }
     >
-      {isVisible ? (
-        <p className="pane-footer transliteration-text">{value}</p>
-      ) : (
-        <span className="transliteration-collapsed-label"></span>
-      )}
+      <span className={`transliteration-collapsed-label${hasValue && !isExpanded ? " is-visible" : ""}`}>
+        Transliteration
+      </span>
+
+      <p className={`pane-footer transliteration-text transliteration-panel${isExpanded ? " is-visible" : ""}`}>
+        {value}
+      </p>
     </button>
   )
 }

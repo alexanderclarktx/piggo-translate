@@ -350,10 +350,16 @@ main {
   cursor: pointer;
   border-radius: 0.5rem;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+  overflow: hidden;
 }
 
 .transliteration-box:hover {
   background: rgba(60, 53, 25, 0.06);
+}
+
+.transliteration-box:disabled {
+  cursor: default;
+  pointer-events: none;
 }
 
 .transliteration-box:focus-visible {
@@ -369,8 +375,19 @@ main {
   display: block;
   color: #5f5230;
   font-size: 0.84rem;
-  min-height: 0.5em;
+  min-height: 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
   text-align: center;
+  transition: max-height 500ms ease, opacity 350ms ease, padding 500ms ease;
+}
+
+.transliteration-collapsed-label.is-visible {
+  min-height: 0.5em;
+  max-height: 2rem;
+  opacity: 1;
+  padding: 0.1rem 0;
 }
 
 .transliteration-text {
@@ -385,11 +402,31 @@ main {
   text-align: center;
 }
 
+.transliteration-panel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-color: transparent;
+  transition: max-height 500ms ease, opacity 350ms ease, padding 500ms ease, border-color 500ms ease, background-color 500ms ease;
+}
+
+.transliteration-panel.is-visible {
+  max-height: 10rem;
+  opacity: 1;
+  padding-top: 0.65rem;
+  padding-bottom: 0.75rem;
+  border-top-color: rgba(16, 24, 32, 0.08);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pane,
   .pane-stack .pane,
   .pane-stack .pane-textarea,
-  .pane-footer {
+  .pane-footer,
+  .transliteration-collapsed-label,
+  .transliteration-panel {
     transition: none;
   }
 }

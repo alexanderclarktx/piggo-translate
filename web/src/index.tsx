@@ -303,13 +303,11 @@ const App = () => {
           value={outputText}
           autoFocus={false}
           footer={
-            outputTransliteration ? (
-              <Transliteration
-                value={outputTransliteration}
-                isVisible={isTransliterationVisible}
-                onToggle={() => setIsTransliterationVisible((value) => !value)}
-              />
-            ) : null
+            <Transliteration
+              value={outputTransliteration}
+              isVisible={isTransliterationVisible}
+              onToggle={() => setIsTransliterationVisible((value) => !value)}
+            />
           }
           readOnly
         />
