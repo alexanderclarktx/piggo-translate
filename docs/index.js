@@ -17600,6 +17600,10 @@ var App = () => {
         className: "pane-stack",
         "aria-label": "Translator workspace",
         children: [
+          !isSocketOpen ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+            className: "pane-stack-connection-dot long-fade-in",
+            "aria-hidden": "true"
+          }, undefined, false, undefined, this) : null,
           /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
             id: "input-pane-title",
             title: "Input",

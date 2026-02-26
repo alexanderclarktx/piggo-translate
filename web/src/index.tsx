@@ -380,6 +380,10 @@ const App = () => {
       /> */}
 
       <section className="pane-stack" aria-label="Translator workspace">
+        {!isSocketOpen ? (
+          <span className="pane-stack-connection-dot long-fade-in" aria-hidden="true" />
+        ) : null}
+
         <TextPane
           id="input-pane-title"
           title="Input"

@@ -242,6 +242,18 @@ main {
   z-index: 1;
 }
 
+.pane-stack-connection-dot {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #d32f2f;
+  /* box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85); */
+  z-index: 2;
+}
+
 .pane-stack .pane {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(16, 24, 32, 0.12);
@@ -277,6 +289,10 @@ main {
 
 .pane-fade-in {
   animation: title-fade-in 500ms ease-out both;
+}
+
+.long-fade-in {
+  animation: title-fade-in 500ms ease-in both;
 }
 
 .pane-no-header {
