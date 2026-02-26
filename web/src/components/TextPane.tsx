@@ -38,6 +38,12 @@ const TextPane = ({
   }, [desiredText])
 
   useEffect(() => {
+    if (!desiredText) {
+      setText("")
+    }
+  }, [desiredText])
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
       setText((currentText) => {
         const nextDesiredText = desiredTextRef.current

@@ -22,6 +22,12 @@ const Transliteration = ({ value, isVisible, onToggle }: TransliterationProps) =
   }, [desiredText])
 
   useEffect(() => {
+    if (!desiredText) {
+      setText("")
+    }
+  }, [desiredText])
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
       setText((currentText) => {
         const nextDesiredText = desiredTextRef.current
