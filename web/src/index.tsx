@@ -63,7 +63,7 @@ const App = () => {
   const currentNormalizedInputTextRef = useRef("")
   const lastRequestedSignatureRef = useRef("")
   const normalizedInputText = normalizeText(inputText)
-  const hasInputText = !!inputText.trim()
+  const hasInputText = !!normalizedInputText
   const isSpinnerVisible =
     isTranslating &&
     !!latestRequestSnapshot.id &&
@@ -157,25 +157,17 @@ const App = () => {
           return
         }
 
-        if (
-          !latestRequestRef.current.id ||
-          !latestRequestRef.current.normalizedInputText ||
-          !currentNormalizedInputTextRef.current
-        ) {
-          return
-        }
+        const latestRequestId = latestRequestRef.current.id
+        const latestRequestInput = latestRequestRef.current.normalizedInputText
+        const currentInput = currentNormalizedInputTextRef.current
+        const isActiveCurrentRequest =
+          !!latestRequestId &&
+          !!latestRequestInput &&
+          !!currentInput &&
+          currentInput === latestRequestInput &&
+          (!message.requestId || message.requestId === latestRequestId)
 
-        if (
-          message.requestId &&
-          latestRequestRef.current.id &&
-          message.requestId !== latestRequestRef.current.id
-        ) {
-          return
-        }
-
-        if (
-          currentNormalizedInputTextRef.current !== latestRequestRef.current.normalizedInputText
-        ) {
+        if (!isActiveCurrentRequest) {
           return
         }
 
@@ -307,7 +299,7 @@ const App = () => {
     <main>
       <header>
         <h1>
-          <span>Piggo Translate</span>
+          <span>piggo translate</span>
           {/* <img src="/favicon.svg" alt="" aria-hidden="true" className="title-icon" /> */}
         </h1>
       </header>
