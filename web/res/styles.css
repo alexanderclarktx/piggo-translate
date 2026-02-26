@@ -322,45 +322,36 @@ main {
   min-width: 0;
 }
 
-.transliteration-toggle-row {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 0.65rem 0.35rem;
-}
-
-.transliteration-toggle {
+.transliteration-box {
+  width: 100%;
   border: 0;
   background: transparent;
-  color: #5f5230;
+  color: #3c3519;
   padding: 0;
-  width: 1.1rem;
-  height: 1.1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: 0.5rem;
+  transition: background-color 120ms ease;
 }
 
-.transliteration-toggle:hover {
-  background: rgba(60, 53, 25, 0.08);
+.transliteration-box:hover {
+  background: rgba(60, 53, 25, 0.06);
 }
 
-.transliteration-toggle:focus-visible {
+.transliteration-box:focus-visible {
   outline: 2px solid rgba(60, 53, 25, 0.35);
   outline-offset: 2px;
 }
 
-.transliteration-caret {
-  display: inline-block;
-  line-height: 1;
-  font-size: 0.8rem;
-  transform: rotate(180deg);
-  transition: transform 120ms ease;
+.transliteration-box.is-collapsed {
+  padding: 0.1rem 0;
 }
 
-.transliteration-caret.is-collapsed {
-  transform: rotate(0deg);
+.transliteration-collapsed-label {
+  display: block;
+  color: #5f5230;
+  font-size: 0.84rem;
+  min-height: 0.5em;
+  text-align: center;
 }
 
 .transliteration-text {

@@ -291,17 +291,13 @@ const App = () => {
           ariaLabel="Translated text"
           value={outputText}
           autoFocus={false}
-          afterTextarea={
+          footer={
             outputTransliteration ? (
               <Transliteration
+                value={outputTransliteration}
                 isVisible={isTransliterationVisible}
                 onToggle={() => setIsTransliterationVisible((value) => !value)}
               />
-            ) : null
-          }
-          footer={
-            outputTransliteration && isTransliterationVisible ? (
-              <p className="transliteration-text">{outputTransliteration}</p>
             ) : null
           }
           readOnly

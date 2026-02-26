@@ -63,7 +63,7 @@ const TextPane = ({
       />
 
       {afterTextarea}
-      {footer ? <div className="pane-footer">{footer}</div> : null}
+      {footer ? footer : null}
     </section>
   )
 }
