@@ -266,7 +266,7 @@ const buildTranslationPrompt = (text: string, targetLanguage: string) => {
     `Translate the following text to ${targetLanguage}.\n` +
     "Return only a valid JSON object with exactly these keys:\n" +
     `{"translation":"...","transliteration":"..."}\n` +
-    "The transliteration must be the pronunciation of the translated text written using the source input's alphabet/script.\n" +
+    "The transliteration must be the pronunciation (or pinyin in the case of Chinese) of the translated text written using the source input's alphabet/script.\n" +
     "Do not include markdown, code fences, or explanations.\n\n" +
     text
   )
