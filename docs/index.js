@@ -17637,7 +17637,12 @@ var App = () => {
             "aria-hidden": "true"
           }, undefined, false, undefined, this) : null
         ]
-      }, undefined, true, undefined, this)
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+        className: "app-version",
+        "aria-label": "App version",
+        children: "v0.1.3"
+      }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 };

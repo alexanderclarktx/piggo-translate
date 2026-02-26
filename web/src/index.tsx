@@ -429,6 +429,10 @@ const App = () => {
           onModelToggle={setSelectedModel}
         />
       </div> */}
+
+      <span className="app-version" aria-label="App version">
+        v0.1.3
+      </span>
     </main>
   )
 }

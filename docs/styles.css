@@ -77,6 +77,18 @@ main {
   gap: 1rem;
 }
 
+.app-version {
+  position: fixed;
+  left: 0.75rem;
+  bottom: 0.5rem;
+  font-size: 0.6rem;
+  font-family: 'Courier New', monospace;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.55);
+  user-select: none;
+  pointer-events: none;
+}
+
 .toolbar {
   display: grid;
   gap: 0.5rem;
