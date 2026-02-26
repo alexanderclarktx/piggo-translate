@@ -67,7 +67,7 @@ main {
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background-color 160ms ease-out, box-shadow 180ms ease-out,
+  transition: background-color 160ms ease-out, box-shadow 500ms ease-out,
     transform 160ms ease-out;
 }
 
@@ -158,7 +158,7 @@ main {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 180ms ease-out, border-color 180ms ease-out,
+  transition: background-color 500ms ease-out, border-color 500ms ease-out,
     box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -195,7 +195,7 @@ main {
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 6px 14px rgba(14, 111, 215, 0.28);
-  transition: background-color 180ms ease-out,
+  transition: background-color 500ms ease-out,
     box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -254,12 +254,14 @@ main {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 10px;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease;
 }
 
 .pane-stack .pane-textarea {
   min-height: 0;
   overflow: hidden;
   resize: none;
+  transition: height 500ms ease;
 }
 
 .pane-stack-spinner {
@@ -278,10 +280,25 @@ main {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
 .pane-no-header {
   display: flex;
+}
+
+.pane-transparent {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.pane-transparent .pane-textarea[readonly] {
+  background: transparent;
+}
+
+.pane-transparent .pane-footer {
+  background: transparent;
+  border-top-color: transparent;
 }
 
 .pane-header {
@@ -303,6 +320,7 @@ main {
   line-height: 1.45;
   outline: none;
   overflow: hidden;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
 .pane-textarea::placeholder {
@@ -320,6 +338,7 @@ main {
   background: rgba(255, 255, 255, 0.18);
   padding: 0.65rem 1rem 0.75rem;
   min-width: 0;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
 .transliteration-box {
@@ -330,7 +349,7 @@ main {
   padding: 0;
   cursor: pointer;
   border-radius: 0.5rem;
-  transition: background-color 120ms ease;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
 .transliteration-box:hover {
@@ -364,6 +383,15 @@ main {
   overflow-wrap: anywhere;
   word-break: break-word;
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pane,
+  .pane-stack .pane,
+  .pane-stack .pane-textarea,
+  .pane-footer {
+    transition: none;
+  }
 }
 
 .pane-switch-row {

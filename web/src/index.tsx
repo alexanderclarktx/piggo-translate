@@ -297,6 +297,7 @@ const App = () => {
           id="output-pane-title"
           title="Translated Output"
           showHeader={false}
+          className={inputText.trim() ? undefined : "pane-transparent"}
           placeholder=""
           ariaLabel="Translated text"
           value={outputText}

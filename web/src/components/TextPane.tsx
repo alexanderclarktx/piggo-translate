@@ -6,6 +6,7 @@ type TextPaneProps = {
   placeholder: string
   ariaLabel: string
   value: string
+  className?: string
   afterTextarea?: ReactNode
   footer?: ReactNode
   readOnly: boolean
@@ -15,9 +16,10 @@ type TextPaneProps = {
 }
 
 const TextPane = ({
-  id, title, placeholder, ariaLabel, value, afterTextarea, footer, readOnly, autoFocus, onChange, showHeader
+  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, showHeader
 }: TextPaneProps) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const paneClassName = [showHeader ? "pane" : "pane pane-no-header", className].filter(Boolean).join(" ")
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current
@@ -32,7 +34,7 @@ const TextPane = ({
 
   return (
     <section
-      className={showHeader ? "pane" : "pane pane-no-header"}
+      className={paneClassName}
       aria-labelledby={showHeader ? id : undefined}
       aria-label={showHeader ? undefined : ariaLabel}
     >
