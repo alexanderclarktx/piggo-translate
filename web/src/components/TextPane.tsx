@@ -6,6 +6,7 @@ type TextPaneProps = {
   placeholder: string
   ariaLabel: string
   value: string
+  afterTextarea?: ReactNode
   footer?: ReactNode
   readOnly: boolean
   autoFocus: boolean
@@ -14,7 +15,7 @@ type TextPaneProps = {
 }
 
 const TextPane = ({
-  id, title, placeholder, ariaLabel, value, footer, readOnly, autoFocus, onChange, showHeader
+  id, title, placeholder, ariaLabel, value, afterTextarea, footer, readOnly, autoFocus, onChange, showHeader
 }: TextPaneProps) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
@@ -61,6 +62,7 @@ const TextPane = ({
         }}
       />
 
+      {afterTextarea}
       {footer ? <div className="pane-footer">{footer}</div> : null}
     </section>
   )

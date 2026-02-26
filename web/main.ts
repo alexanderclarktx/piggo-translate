@@ -1,4 +1,5 @@
 export * from './src/components/LanguagePicker'
 export * from './src/components/ModelSwitch'
 export * from './src/components/TextPane'
+export * from './src/components/Transliteration'
 export * from './src/components/TranslateToolbar'

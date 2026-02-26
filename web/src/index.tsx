@@ -1,5 +1,5 @@
 import { TranslateModel, TranslateWsRequestMessage, TranslateWsServerMessage } from "@template/core"
-import { LanguageOption, TextPane, TranslateToolbar } from "@template/web"
+import { LanguageOption, TextPane, Transliteration, TranslateToolbar } from "@template/web"
 import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 
@@ -23,6 +23,7 @@ const App = () => {
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [outputTransliteration, setOutputTransliteration] = useState("")
+  const [isTransliterationVisible, setIsTransliterationVisible] = useState(true)
   const [errorText, setErrorText] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
   const [isSocketOpen, setIsSocketOpen] = useState(false)
@@ -138,6 +139,7 @@ const App = () => {
         if (message.type === "translate.success") {
           setOutputText(message.text)
           setOutputTransliteration(message.transliteration)
+          setIsTransliterationVisible(true)
           setErrorText("")
           return
         }
@@ -171,7 +173,7 @@ const App = () => {
       })
     }
 
-    connectSocket()
+    if (window.location.hostname === "localhost") connectSocket()
 
     return () => {
       isDisposed = true
@@ -289,8 +291,16 @@ const App = () => {
           ariaLabel="Translated text"
           value={outputText}
           autoFocus={false}
-          footer={
+          afterTextarea={
             outputTransliteration ? (
+              <Transliteration
+                isVisible={isTransliterationVisible}
+                onToggle={() => setIsTransliterationVisible((value) => !value)}
+              />
+            ) : null
+          }
+          footer={
+            outputTransliteration && isTransliterationVisible ? (
               <p className="transliteration-text">{outputTransliteration}</p>
             ) : null
           }

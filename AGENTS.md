@@ -15,10 +15,14 @@ Run these from the repo root:
 
 ## Coding Style & Naming Conventions
 - Use 2-space indentation for TypeScript and CSS.
-- Keep filenames and directories lowercase (`core/util/AppUtil.ts` is the exception; preserve existing casing when extending it).
-- do not use `class`. instead create a `type` and corresponding function (with the same name) to return an instance of the type
+- use PascalCase for class files, and lowercase filenames for everything else
+- prefer to place all destructured items in a single line like `{ dog, cat } = animals`
+- never use `import type`
+- do not use `class`
+  - instead create a `type` and corresponding function (with the same name) to return an instance of the type
 - do not end lines with semicolons
-- do not use `function`. instead create arrow functions
+- do not use `function`
+  - instead create arrow functions
 
 ## Testing Guidelines
 - No test framework is configured yet. If you add tests, document the tool and command in this file.
