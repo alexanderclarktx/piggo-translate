@@ -61,10 +61,8 @@ h1 {
 
 .title-icon {
   justify-self: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
 }
 
 h2 {
@@ -279,6 +277,10 @@ main {
   transition: height 500ms ease;
 }
 
+.pane-stack .pane-text-content {
+  transition: height 500ms ease;
+}
+
 .pane-stack-spinner {
   position: absolute;
   right: 0.75rem;
@@ -312,6 +314,10 @@ main {
 }
 
 .pane-transparent .pane-textarea[readonly] {
+  background: transparent;
+}
+
+.pane-transparent .pane-text-content {
   background: transparent;
 }
 
@@ -351,6 +357,31 @@ main {
   background: rgba(255, 255, 255, 0.28);
   cursor: default;
   pointer-events: none;
+}
+
+.pane-text-content {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: rgba(255, 255, 255, 0.28);
+  padding: 1rem;
+  font: inherit;
+  color: inherit;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+}
+
+.pane-text-content-selectable {
+  user-select: text;
+  cursor: text;
+}
+
+.pane-text-token {
+  cursor: pointer;
 }
 
 .pane-footer {

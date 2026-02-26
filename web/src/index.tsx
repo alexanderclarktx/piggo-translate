@@ -414,7 +414,11 @@ const App = () => {
               onToggle={() => setIsTransliterationVisible((value) => !value)}
             />
           ) : null}
-          readOnly={false}
+          readOnly
+          enableTokenSelection
+          onSelectionChange={(selection) => {
+            console.log("Output selection:", selection)
+          }}
         />
 
         {hasInputText && isSpinnerVisible ? (

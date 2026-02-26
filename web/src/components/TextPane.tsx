@@ -3,6 +3,7 @@ import { MutableRefObject, ReactNode, useEffect, useLayoutEffect, useRef, useSta
 const textPaneAnimationMinIntervalMs = 10
 const textPaneAnimationMaxIntervalMs = 110
 const textPaneAnimationFastThreshold = 24
+const selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu
 
 const getSharedPrefixLength = (left: string, right: string) => {
   const maxLength = Math.min(left.length, right.length)
@@ -49,17 +50,23 @@ type TextPaneProps = {
   readOnly: boolean
   autoFocus: boolean
   onChange?: (value: string) => void
+  onSelectionChange?: (selection: string) => void
   showHeader: boolean
   textareaRef?: MutableRefObject<HTMLTextAreaElement | null>
+  enableTokenSelection?: boolean
 }
 
 const TextPane = ({
-  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, showHeader, textareaRef
+  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, onSelectionChange, showHeader, textareaRef, enableTokenSelection
 }: TextPaneProps) => {
   const localTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const textContentRef = useRef<HTMLDivElement | null>(null)
+  const lastSelectionRef = useRef("")
   const [text, setText] = useState(value)
   const [desiredText, setDesiredText] = useState(value)
   const paneClassName = [showHeader ? "pane" : "pane pane-no-header", className].filter(Boolean).join(" ")
+  const selectableTokens = text.match(selectableOutputTokenPattern) ?? []
+  const shouldRenderSelectableOutput = !!enableTokenSelection
 
   useEffect(() => {
     setDesiredText(value)
@@ -104,6 +111,10 @@ const TextPane = ({
   }, [desiredText, text])
 
   useLayoutEffect(() => {
+    if (shouldRenderSelectableOutput) {
+      return
+    }
+
     const textarea = localTextareaRef.current
 
     if (!textarea) {
@@ -112,7 +123,60 @@ const TextPane = ({
 
     textarea.style.height = "auto"
     textarea.style.height = `${textarea.scrollHeight}px`
-  }, [text])
+  }, [shouldRenderSelectableOutput, text])
+
+  useEffect(() => {
+    if (!shouldRenderSelectableOutput || !onSelectionChange) {
+      return
+    }
+
+    const handleSelectionChange = () => {
+      const contentElement = textContentRef.current
+      const selection = window.getSelection()
+
+      if (!contentElement || !selection || selection.rangeCount === 0) {
+        lastSelectionRef.current = ""
+        return
+      }
+
+      const range = selection.getRangeAt(0)
+      const isSelectionInsideText =
+        contentElement.contains(range.startContainer) &&
+        contentElement.contains(range.endContainer)
+
+      if (!isSelectionInsideText) {
+        return
+      }
+
+      const nextSelection = selection.toString()
+
+      if (!nextSelection || nextSelection === lastSelectionRef.current) {
+        return
+      }
+
+      lastSelectionRef.current = nextSelection
+      onSelectionChange(nextSelection)
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange)
+
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange)
+    }
+  }, [onSelectionChange, shouldRenderSelectableOutput])
+
+  const selectToken = (tokenElement: HTMLSpanElement) => {
+    const selection = window.getSelection()
+
+    if (!selection) {
+      return
+    }
+
+    const range = document.createRange()
+    range.selectNodeContents(tokenElement)
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
 
   return (
     <section
@@ -126,37 +190,64 @@ const TextPane = ({
         </div>
       ) : null}
 
-      <textarea
-        ref={(node) => {
-          localTextareaRef.current = node
+      {shouldRenderSelectableOutput ? (
+        <div
+          ref={textContentRef}
+          className="pane-text-content pane-text-content-selectable"
+          role="textbox"
+          aria-label={ariaLabel}
+        >
+          {selectableTokens.map((token, tokenIndex) => {
+            if (!token.trim()) {
+              return token
+            }
 
-          if (textareaRef) {
-            textareaRef.current = node
-          }
-        }}
-        className="pane-textarea"
-        rows={1}
-        placeholder={placeholder}
-        aria-label={ariaLabel}
-        value={text}
-        readOnly={readOnly}
-        autoFocus={autoFocus}
-        autoCorrect="off"
-        autoCapitalize="off"
-        autoComplete="off"
-        spellCheck={false}
-        onChange={(event) => {
-          const nextValue = event.target.value
+            return (
+              <span
+                key={`${token}-${tokenIndex}`}
+                className="pane-text-token"
+                onClick={(event) => {
+                  selectToken(event.currentTarget)
+                }}
+              >
+                {token}
+              </span>
+            )
+          })}
+        </div>
+      ) : (
+        <textarea
+          ref={(node) => {
+            localTextareaRef.current = node
 
-          setText(nextValue)
-          setDesiredText(nextValue)
-          onChange?.(nextValue)
-        }}
-        style={{
-          textAlign: "center",
-          // transform: "translate(-50%)"
-        }}
-      />
+            if (textareaRef) {
+              textareaRef.current = node
+            }
+          }}
+          className="pane-textarea"
+          rows={1}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          value={text}
+          readOnly={readOnly}
+          autoFocus={autoFocus}
+          autoCorrect="off"
+          autoCapitalize="off"
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(event) => {
+            const nextValue = event.target.value
+
+            setText(nextValue)
+            setDesiredText(nextValue)
+            onChange?.(nextValue)
+          }}
+          style={{
+            textAlign: "center",
+            // transform: "translate(-50%)"
+          }}
+        />
+      )}
 
       {afterTextarea}
       {footer ? footer : null}
