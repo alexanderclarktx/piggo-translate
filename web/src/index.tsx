@@ -19,6 +19,8 @@ const getTranslateWsUrl = () => {
   return `http://${hostname}:5001/api/ws`
 }
 
+const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
+
 const getRequestSignature = ({
   text,
   targetLanguage,
@@ -28,7 +30,7 @@ const getRequestSignature = ({
   targetLanguage: string
   model: TranslateModel
 }) => {
-  const normalizedText = text.replace(/\s+/g, " ").trim()
+  const normalizedText = normalizeText(text)
   return `${model}::${normalizedText}::${targetLanguage}`
 }
 
@@ -40,6 +42,10 @@ const App = () => {
   const [errorText, setErrorText] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
   const [isSocketOpen, setIsSocketOpen] = useState(false)
+  const [latestRequestSnapshot, setLatestRequestSnapshot] = useState({
+    id: "",
+    normalizedInputText: ""
+  })
   const [debouncedRequest, setDebouncedRequest] = useState<{
     text: string
     targetLanguage: string
@@ -50,8 +56,17 @@ const App = () => {
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutIdRef = useRef<number | null>(null)
   const requestCounterRef = useRef(0)
-  const latestRequestIdRef = useRef("")
+  const latestRequestRef = useRef({
+    id: "",
+    normalizedInputText: ""
+  })
+  const currentNormalizedInputTextRef = useRef("")
   const lastRequestedSignatureRef = useRef("")
+  const normalizedInputText = normalizeText(inputText)
+  const isSpinnerVisible =
+    isTranslating &&
+    !!latestRequestSnapshot.id &&
+    normalizedInputText === latestRequestSnapshot.normalizedInputText
 
   const sendTranslateRequest = (requestInput: {
     text: string
@@ -62,7 +77,6 @@ const App = () => {
 
     if (
       !requestInput.text ||
-      isTranslating ||
       !socket ||
       socket.readyState !== WebSocket.OPEN
     ) {
@@ -74,7 +88,11 @@ const App = () => {
 
     setErrorText("")
     setIsTranslating(true)
-    latestRequestIdRef.current = requestId
+    latestRequestRef.current = {
+      id: requestId,
+      normalizedInputText: normalizeText(requestInput.text)
+    }
+    setLatestRequestSnapshot(latestRequestRef.current)
     lastRequestedSignatureRef.current = getRequestSignature(requestInput)
 
     const request: TranslateWsRequestMessage = {
@@ -140,8 +158,14 @@ const App = () => {
 
         if (
           message.requestId &&
-          latestRequestIdRef.current &&
-          message.requestId !== latestRequestIdRef.current
+          latestRequestRef.current.id &&
+          message.requestId !== latestRequestRef.current.id
+        ) {
+          return
+        }
+
+        if (
+          currentNormalizedInputTextRef.current !== latestRequestRef.current.normalizedInputText
         ) {
           return
         }
@@ -177,6 +201,9 @@ const App = () => {
 
         setIsSocketOpen(false)
         setIsTranslating(false)
+        latestRequestRef.current = { id: "", normalizedInputText: "" }
+        setLatestRequestSnapshot(latestRequestRef.current)
+        currentNormalizedInputTextRef.current = ""
         lastRequestedSignatureRef.current = ""
         reconnectTimeoutIdRef.current = window.setTimeout(() => {
           connectSocket()
@@ -205,12 +232,15 @@ const App = () => {
   // if input changes
   useEffect(() => {
     const trimmedText = inputText.trim()
+    currentNormalizedInputTextRef.current = normalizedInputText
 
     if (!trimmedText) {
       setOutputText("")
       setOutputTransliteration("")
       setErrorText("")
       setDebouncedRequest(null)
+      latestRequestRef.current = { id: "", normalizedInputText: "" }
+      setLatestRequestSnapshot(latestRequestRef.current)
       lastRequestedSignatureRef.current = ""
       return
     }
@@ -226,7 +256,7 @@ const App = () => {
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [inputText])
+  }, [inputText, normalizedInputText])
 
   // if language changes
   useEffect(() => {
@@ -237,6 +267,8 @@ const App = () => {
       setOutputTransliteration("")
       setErrorText("")
       setDebouncedRequest(null)
+      latestRequestRef.current = { id: "", normalizedInputText: "" }
+      setLatestRequestSnapshot(latestRequestRef.current)
       lastRequestedSignatureRef.current = ""
       return
     }
@@ -249,7 +281,7 @@ const App = () => {
   }, [targetLanguage])
 
   useEffect(() => {
-    if (!debouncedRequest || !isSocketOpen || isTranslating) {
+    if (!debouncedRequest || !isSocketOpen) {
       return
     }
 
@@ -260,7 +292,7 @@ const App = () => {
     }
 
     sendTranslateRequest(debouncedRequest)
-  }, [debouncedRequest, isSocketOpen, isTranslating])
+  }, [debouncedRequest, isSocketOpen])
 
   return (
     <main>
@@ -312,7 +344,7 @@ const App = () => {
           readOnly
         />
 
-        {isTranslating ? (
+        {isSpinnerVisible ? (
           <span className="spinner pane-stack-spinner" aria-hidden="true" />
         ) : null}
       </section>
