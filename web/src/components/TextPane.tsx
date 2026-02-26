@@ -50,6 +50,10 @@ const TextPane = ({
         value={value}
         readOnly={readOnly}
         autoFocus={autoFocus}
+        autoCorrect="off"
+        autoCapitalize="off"
+        autoComplete="off"
+        spellCheck={false}
         onChange={(event) => onChange?.(event.target.value)}
         style={{
           textAlign: "center",
