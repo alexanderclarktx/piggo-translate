@@ -1,3 +1,5 @@
+import type { Translator } from "./Translator"
+
 type OpenAiRealtimeServerEvent = {
   type?: string
   delta?: string
@@ -35,12 +37,7 @@ type TranslationStructuredOutput = {
   transliteration: string
 }
 
-export type OpenAiTranslator = {
-  translate: (
-    text: string,
-    targetLanguage: string
-  ) => Promise<TranslationStructuredOutput>
-}
+export type OpenAiTranslator = Translator
 
 const parseStructuredTranslation = (rawText: string) => {
   const trimmed = rawText.trim()

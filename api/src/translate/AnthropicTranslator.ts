@@ -1,3 +1,5 @@
+import type { Translator } from "./Translator"
+
 type AnthropicMessageContentBlock = {
   type: string
   text?: string
@@ -15,12 +17,7 @@ type TranslationStructuredOutput = {
   transliteration: string
 }
 
-export type AnthropicTranslator = {
-  translate: (
-    text: string,
-    targetLanguage: string
-  ) => Promise<TranslationStructuredOutput>
-}
+export type AnthropicTranslator = Translator
 
 const translationOutputSchema = {
   type: "object",

@@ -1,3 +1,5 @@
+import type { Translator } from "./Translator"
+
 type OpenAiResponsesApiError = {
   error?: {
     message?: string
@@ -27,12 +29,7 @@ type TranslationStructuredOutput = {
   transliteration: string
 }
 
-export type ResponsesTranslator = {
-  translate: (
-    text: string,
-    targetLanguage: string
-  ) => Promise<TranslationStructuredOutput>
-}
+export type ResponsesTranslator = Translator
 
 const translationOutputSchema = {
   type: "object",
