@@ -31,9 +31,7 @@ const Transliteration = ({ value, isVisible, onToggle }: TransliterationProps) =
             : "Click to expand transliteration"
       }
     >
-      <span className={`transliteration-collapsed-label${hasValue && !isExpanded ? " is-visible" : ""}`}>
-        Transliteration
-      </span>
+      <span className={`transliteration-collapsed-label${hasValue && !isExpanded ? " is-visible" : ""}`}/>
 
       <p className={`pane-footer transliteration-text transliteration-panel${isExpanded ? " is-visible" : ""}`}>
         {value}
