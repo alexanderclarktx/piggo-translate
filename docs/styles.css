@@ -54,7 +54,7 @@ h1 {
     animation: none;
   }
 
-  .pane-fade-in {
+  .fade-in {
     animation: none;
   }
 }
@@ -298,7 +298,7 @@ main {
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
-.pane-fade-in {
+.fade-in {
   animation: title-fade-in 500ms ease-out both;
 }
 

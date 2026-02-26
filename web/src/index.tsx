@@ -365,7 +365,7 @@ const App = () => {
 
   return (
     <main>
-      <img src="/piggo.svg" alt="" aria-hidden="true" className="title-icon" /> 
+      <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" /> 
       <h1>
         Piggo Translate
       </h1>
@@ -381,14 +381,14 @@ const App = () => {
 
       <section className="pane-stack" aria-label="Translator workspace">
         {!isSocketOpen ? (
-          <span className="pane-stack-connection-dot long-fade-in" aria-hidden="true" />
+          <span className="pane-stack-connection-dot fade-in" aria-hidden="true" />
         ) : null}
 
         <TextPane
           id="input-pane-title"
           title="Input"
           showHeader={false}
-          className="pane-fade-in"
+          className="fade-in"
           placeholder=""
           ariaLabel="Text to translate"
           value={inputText}

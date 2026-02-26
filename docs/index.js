@@ -17300,7 +17300,7 @@ var Transliteration = ({ value, isVisible, onToggle }) => {
   }, [desiredText, text]);
   return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
     type: "button",
-    className: `transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""} pane-fade-in`,
+    className: `transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""} fade-in`,
     "aria-label": !hasValue ? "No transliteration available" : isExpanded ? "Hide transliteration" : "Show transliteration",
     "aria-expanded": isExpanded,
     "aria-hidden": !hasValue,
@@ -17607,7 +17607,7 @@ var App = () => {
             id: "input-pane-title",
             title: "Input",
             showHeader: false,
-            className: "pane-fade-in",
+            className: "fade-in",
             placeholder: "",
             ariaLabel: "Text to translate",
             value: inputText,
