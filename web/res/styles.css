@@ -451,6 +451,10 @@ main {
   border-top-color: rgba(16, 24, 32, 0.08);
 }
 
+.transliteration-box.has-value .transliteration-panel.is-visible {
+  min-height: 1.35em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pane,
   .pane-stack .pane,
