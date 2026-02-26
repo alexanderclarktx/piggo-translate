@@ -12,11 +12,6 @@ type AnthropicMessageResponse = {
   }
 }
 
-type TranslationStructuredOutput = {
-  translation: string
-  transliteration: string
-}
-
 const translationOutputSchema = {
   type: "object",
   properties: {
@@ -137,5 +132,5 @@ const parseStructuredTranslation = (content?: AnthropicMessageContentBlock[]) =>
   return {
     translation,
     transliteration
-  } satisfies TranslationStructuredOutput
+  }
 }

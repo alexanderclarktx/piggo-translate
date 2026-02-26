@@ -23,15 +23,6 @@ type OpenAiRealtimeServerEvent = {
   }
 }
 
-type BunWebSocketConstructor = {
-  new(
-    url: string,
-    options?: {
-      headers?: Record<string, string>
-    }
-  ): WebSocket
-}
-
 type TranslationStructuredOutput = {
   translation: string
   transliteration: string
@@ -93,15 +84,13 @@ export const OpenAiTranslator = (): Translator => ({
         ws.close()
       }, timeoutMs)
 
-      ws = new (WebSocket as unknown as BunWebSocketConstructor)(
-        `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "OpenAI-Beta": "realtime=v1"
-          }
+      ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`, {
+        // @ts-expect-error
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "OpenAI-Beta": "realtime=v1"
         }
-      )
+      })
 
       ws.addEventListener("open", () => {
         ws.send(
