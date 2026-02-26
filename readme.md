@@ -1,8 +1,9 @@
-# Template Monorepo
+<div align="center">
 
-Minimal Bun monorepo with a shared core library, a web UI, and an HTTP API.
+  __Piggo Translate__ is a tool for translation and learning.
+</div>
 
-## Quickstart
-- Install deps: `bun install`
-- Run API + web: `bun run dev`
-- Typecheck: `bun run typecheck`
+
+<p align="center">
+  <img style="width:90%" src="screenshot.png"/>
+</p>
