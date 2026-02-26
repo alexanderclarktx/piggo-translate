@@ -209,42 +209,6 @@ main {
   outline-offset: 2px;
 }
 
-.translate-button {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  border: 0;
-  border-radius: 999px;
-  padding: 0.7rem 1rem;
-  background: #0e6fd7;
-  color: #ffffff;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 14px rgba(14, 111, 215, 0.28);
-  transition: background-color 500ms ease-out,
-    box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.translate-button:hover:not(:disabled) {
-  background: #0a62c0;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(14, 111, 215, 0.3);
-}
-
-.translate-button:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 4px 10px rgba(14, 111, 215, 0.22);
-}
-
-.translate-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
 .spinner {
   width: 0.6rem;
   height: 0.6rem;
