@@ -18139,7 +18139,8 @@ var App = () => {
             src: "piggo.svg",
             alt: "",
             "aria-hidden": "true",
-            className: "title-icon fade-in"
+            className: "title-icon fade-in",
+            draggable: false
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
             className: "header-title",
@@ -18222,7 +18223,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.1.5"
+        children: "v0.1.6"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
