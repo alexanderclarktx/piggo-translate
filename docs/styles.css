@@ -262,7 +262,7 @@ main {
 
 .pane {
   width: 100%;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 10px;
   display: flex;
@@ -424,7 +424,7 @@ main {
 }
 
 .pane-textarea[readonly] {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 1);
   pointer-events: none;
 }
 
@@ -497,7 +497,7 @@ main {
 }
 
 .pane-footer {
-  border-top: 1px solid rgba(16, 24, 32, 0.08);
+  /* border-top: 1px solid rgba(16, 24, 32, 0.08); */
   padding: 0.65rem 1rem 0.75rem;
   min-width: 0;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
