@@ -34,7 +34,7 @@ const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: TargetLan
     <section ref={rootRef} className="input-pane-language-menu">
       <button
         type="button"
-        className="input-pane-target-language"
+        className="input-pane-target-language fade-in"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={() => {

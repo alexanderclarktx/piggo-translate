@@ -438,6 +438,7 @@ const App = () => {
               <span className="spinner pane-spinner" aria-hidden="true" />
             ) : null}
             readOnly={false}
+            className="fade-in"
           />
         {/* </div> */}
         {/* </section> */}
