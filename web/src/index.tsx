@@ -123,6 +123,7 @@ const App = () => {
   const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
   const [wordDefinitions, setWordDefinitions] = useState<TranslateWordDefinition[]>([])
   const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
+  const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = useState(false)
   const socketRef = useRef<WebSocket | null>(null)
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingInputSelectionRef = useRef<{ start: number, end: number } | null>(null)
@@ -138,6 +139,16 @@ const App = () => {
   const lastDefinitionRequestSignatureRef = useRef("")
   const selectedOutputWordsRef = useRef<string[]>([])
   const definitionCacheRef = useRef<Record<string, string>>({})
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setIsConnectionDotDelayComplete(true)
+    }, 1000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [])
   const definitionCacheOrderRef = useRef<string[]>([])
   const normalizedInputText = normalizeText(inputText)
   const hasInputText = !!normalizedInputText
@@ -630,7 +641,7 @@ const App = () => {
       /> */}
 
       <section className="pane-stack" aria-label="Translator workspace">
-        {!isSocketOpen ? (
+        {!isSocketOpen && isConnectionDotDelayComplete ? (
           <span className="pane-stack-connection-dot fade-in" aria-hidden="true" />
         ) : null}
 
