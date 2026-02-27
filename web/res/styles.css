@@ -90,138 +90,6 @@ main {
   pointer-events: none;
 }
 
-.toolbar {
-  display: grid;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.model-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  border: 1px solid rgba(16, 24, 32, 0.16);
-  border-radius: 999px;
-  padding: 0.3rem 0.55rem 0.3rem 0.35rem;
-  background: rgba(255, 255, 255, 0.8);
-  color: inherit;
-  font: inherit;
-  font-size: 0.85rem;
-  /* cursor: pointer; */
-  transition: background-color 160ms ease-out, box-shadow 500ms ease-out,
-    transform 160ms ease-out;
-}
-
-.model-switch:hover {
-  background: rgba(255, 255, 255, 0.95);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(16, 24, 32, 0.1);
-}
-
-.model-switch:focus-visible {
-  outline: 2px solid #1f2937;
-  outline-offset: 2px;
-}
-
-.model-switch-track {
-  width: 2.2rem;
-  height: 1.2rem;
-  border-radius: 999px;
-  background: #a9b7c7;
-  position: relative;
-  transition: background-color 160ms ease-out;
-}
-
-.model-switch[aria-checked="true"] .model-switch-track {
-  background: #3786da;
-}
-
-.model-switch-thumb {
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 50%;
-  background: #ffffff;
-  position: absolute;
-  top: 0.15rem;
-  left: 0.15rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.model-switch[aria-checked="true"] .model-switch-thumb {
-  transform: translateX(1rem);
-}
-
-.model-switch-text {
-  min-width: 5.4rem;
-  text-align: center;
-  font-weight: 600;
-}
-
-.language-picker {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.language-picker-label {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #243443;
-}
-
-.language-bubbles {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: center;
-  gap: 0.45rem;
-  width: 100%;
-  min-width: 0;
-  /* border: 1px solid rgba(16, 24, 32, 0.12); */
-}
-
-.language-bubble {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(16, 24, 32, 0.16);
-  border-radius: 999px;
-  padding: 0.4rem 0.75rem;
-  background: rgba(255, 255, 255, 0.75);
-  color: inherit;
-  font: inherit;
-  font-size: clamp(0.6rem, 2.8vw, 0.9rem);
-  line-height: 1.1;
-  text-align: center;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  /* cursor: pointer; */
-  transition: background-color 500ms ease-out, border-color 500ms ease-out,
-    box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.language-bubble:hover {
-  background: rgba(255, 255, 255, 0.95);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(16, 24, 32, 0.1);
-}
-
-.language-bubble[data-selected="true"] {
-  background: #3786da;
-  border-color: #3786da;
-  color: #ffffff;
-  box-shadow: 0 4px 10px rgba(14, 111, 215, 0.22);
-}
-
-.language-bubble:focus-visible {
-  outline: 2px solid #1f2937;
-  outline-offset: 2px;
-}
-
 .spinner {
   width: 0.6rem;
   height: 0.6rem;
@@ -290,6 +158,8 @@ main {
   display: flex;
   position: relative;
   align-items: center;
+  padding: 0.45rem 0.6rem;
+  margin: -0.45rem -0.6rem;
 }
 
 .input-pane-target-language {
@@ -310,7 +180,7 @@ main {
   padding: 0;
   z-index: 2;
   transition: background-color 200ms ease, border-color 200ms ease;
-  font-size: clamp(0.7rem, 3vw, 1.2rem);
+  font-size: clamp(0.7rem, 3vw, 1.1rem);
 }
 
 .input-pane-target-language:hover {
@@ -343,7 +213,7 @@ main {
   background: transparent;
   text-align: right;
   font-family: 'Courier New', Courier, monospace;
-  font-size: clamp(0.7rem, 3vw, 1.2rem);
+  font-size: clamp(0.7rem, 3vw, 1.1rem);
   color: white;
   letter-spacing: 0.02em;
   text-align: center;
@@ -362,7 +232,11 @@ main {
 .input-pane-language-menu:focus-within .input-pane-target-language-dropdown {
   visibility: visible;
   pointer-events: auto;
-  border: 1px solid green;
+  /* border: 1px solid green; */
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 14px;
+  margin-right: -14px;
 }
 
 .input-pane-language-menu:hover .input-pane-target-language-option,

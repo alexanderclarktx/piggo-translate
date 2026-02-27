@@ -12,13 +12,14 @@ const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: TargetLan
   const selectedLanguageLabel = options.find((option) => option.value === targetLanguage)?.label || targetLanguage
   const unselectedOptions = options.filter((option) => option.value !== targetLanguage)
 
-  const [isDismissed, setIsDismissed] = useState(false)
+  const [isDismissed, setIsDismissed] = useState(true)
 
   return (
     <section
       className={`input-pane-language-menu${isDismissed ? " input-pane-language-menu-dismissed" : ""}`}
       aria-label="Target language selector"
-      onMouseLeave={(x) => {
+      onPointerLeave={(x) => {
+        if (isMobile()) return
         console.log("leave", x)
         setIsDismissed(true)
       }}
@@ -26,13 +27,23 @@ const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: TargetLan
       <button
         type="button"
         className="input-pane-target-language fade-in"
-        onMouseEnter={() => {
+        onPointerEnter={() => {
           if (isMobile()) return
           console.log("focused")
           setIsDismissed(false)
         }}
-        onMouseDown={() => {
-          setIsDismissed(!isDismissed)
+        onPointerDown={() => {
+          console.log("pointer down", isDismissed)
+          const s = isDismissed
+          setIsDismissed(!s)
+          // if (isDismissed) {
+          //   setIsDismissed(false)
+          // } else {
+          //   setIsDismissed(true)
+          // }
+
+          // setIsDismissed(isDismissed)
+          console.log("pointer down", isDismissed)
         }}
       >
         {selectedLanguageLabel}

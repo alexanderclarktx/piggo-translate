@@ -13,11 +13,11 @@ export type LanguageOption = {
 
 const languageOptions: LanguageOption[] = [
   { label: "Chinese", value: "Chinese (simplified)" },
+  { label: "English", value: "English" },
   { label: "Spanish", value: "Spanish" },
   { label: "Japanese", value: "Japanese" },
   { label: "Russian", value: "Russian" },
   { label: "French", value: "French" },
-  { label: "English", value: "English" },
   // { label: "Italian", value: "Italian" },
   // { label: "Korean", value: "Korean" },
 ]
