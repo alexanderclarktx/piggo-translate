@@ -507,7 +507,7 @@ main {
   border: 0;
   background: rgba(183, 221, 255, 0.2);
   color: #3c3519;
-  padding: 0;
+  padding: 0.8rem;
   border-radius: 0.5rem;
   overflow: hidden;
   transition: background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
