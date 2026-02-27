@@ -308,11 +308,6 @@ main {
   border-top-color: transparent;
 }
 
-.pane-definition .pane-textarea {
-  text-align: left;
-  font-size: 1.3rem;
-}
-
 .pane-header {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid rgba(16, 24, 32, 0.12);
@@ -338,6 +333,11 @@ main {
   cursor: default;
   text-align: center;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+}
+
+.pane-definition .pane-textarea {
+  text-align: left;
+  font-size: 1.3rem;
 }
 
 .pane-textarea::placeholder {
@@ -486,8 +486,8 @@ main {
 .transliteration-panel.is-visible {
   max-height: 10rem;
   opacity: 1;
-  padding-top: 0.65rem;
-  padding-bottom: 0.75rem;
+  /* padding-top: 0.65rem;
+  padding-bottom: 0.75rem; */
   border-top-color: rgba(16, 24, 32, 0.08);
 }
 
@@ -540,6 +540,26 @@ main {
 
 @media (max-width: 800px) {
   body {
-    font-size: 0.8rem;
+    font-size: 1.2rem;
+  }
+
+  .pane-definition .pane-textarea {
+    text-align: left;
+    font-size: 1rem;
+  }
+
+  .transliteration-text {
+    font-size: 1.1rem;
+    padding: 0.7rem;
+  }
+
+  .pane-textarea {
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+  .pane-text-content {
+    padding: 0.7rem;
   }
 }
