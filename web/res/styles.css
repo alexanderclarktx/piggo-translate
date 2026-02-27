@@ -301,7 +301,7 @@ main {
   display: flex;
   flex-direction: column;
   max-width: 600px;
-  width: 100%;
+  width: 99%;
   cursor: initial;
   position: relative;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
