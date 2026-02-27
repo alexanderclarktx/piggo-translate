@@ -295,7 +295,7 @@ main {
 .input-pane-target-language {
   position: relative;
   margin: 0;
-  font-size: 1rem;
+  /* font-size: 1rem; */
   text-align: right;
   font-family: 'Courier New', Courier, monospace;
   color: white;
@@ -310,6 +310,7 @@ main {
   padding: 0;
   z-index: 2;
   transition: background-color 200ms ease, border-color 200ms ease;
+  font-size: clamp(0.7rem, 3vw, 1.2rem);
 }
 
 .input-pane-target-language:hover {
@@ -342,7 +343,7 @@ main {
   background: transparent;
   text-align: right;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 1rem;
+  font-size: clamp(0.7rem, 3vw, 1.2rem);
   color: white;
   letter-spacing: 0.02em;
   text-align: center;
@@ -350,10 +351,11 @@ main {
   margin: 0;
   white-space: nowrap;
   transition: transform 220ms ease, opacity 220ms ease, font-weight 120ms ease, visibility 0s linear 220ms;
+  border-bottom: 1px solid rgba(255, 255, 255, 0);
 }
 
 .input-pane-target-language-option:hover {
-  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
 }
 
 .input-pane-language-menu:hover .input-pane-target-language-dropdown,

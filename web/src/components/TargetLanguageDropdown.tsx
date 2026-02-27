@@ -1,3 +1,4 @@
+import { isMobile } from "@template/web"
 import { LanguageOption } from ".."
 import { useState } from "react"
 
@@ -11,27 +12,26 @@ const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: TargetLan
   const selectedLanguageLabel = options.find((option) => option.value === targetLanguage)?.label || targetLanguage
   const unselectedOptions = options.filter((option) => option.value !== targetLanguage)
 
-  const [show, setShow] = useState(false)
+  const [isDismissed, setIsDismissed] = useState(false)
 
   return (
     <section
-      className={`input-pane-language-menu${show ? " input-pane-language-menu-dismissed" : ""}`}
+      className={`input-pane-language-menu${isDismissed ? " input-pane-language-menu-dismissed" : ""}`}
       aria-label="Target language selector"
       onMouseLeave={() => {
-        setShow(false)
+        setIsDismissed(true)
       }}
     >
       <button
         type="button"
         className="input-pane-target-language fade-in"
-        onMouseDown={() => {
-          // if (!show) setShow(true)
-        }}
         onMouseEnter={() => {
-          // if (show) {
-          //   setShow(false)
-          // }
-          // console.log("mouseenter")
+          if (isMobile()) return
+          console.log("focused")
+          setIsDismissed(false)
+        }}
+        onMouseDown={() => {
+          setIsDismissed(!isDismissed)
         }}
       >
         {selectedLanguageLabel}
@@ -48,9 +48,7 @@ const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: TargetLan
               className="input-pane-target-language-option"
               data-selected="false"
               onClick={() => {
-                // setIsDismissed(true)
-                console.log("option click")
-                setShow(false)
+                setIsDismissed(true)
                 onSelect(option.value)
               }}
             >
