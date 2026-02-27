@@ -26,6 +26,10 @@ const getTranslateWsUrl = () => {
 }
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
+const definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
+const normalizeDefinitionWord = (word: string) => word.replace(definitionWordStripPattern, "")
+const getUniqueDefinitionWords = (words: string[]) =>
+  Array.from(new Set(words.map((word) => normalizeDefinitionWord(word)).filter(Boolean)))
 const isSpaceSeparatedLanguage = (language: string) =>
   !language.toLowerCase().includes("chinese") &&
   !language.toLowerCase().includes("japanese")
@@ -59,7 +63,7 @@ const getDefinitionRequestSignature = (
   targetLanguage: string,
   model: TranslateModel
 ) => {
-  return `${model}::${targetLanguage}::${word}`
+  return `${model}::${targetLanguage}::${normalizeDefinitionWord(word)}`
 }
 
 const definitionCacheMaxItems = 10
@@ -151,12 +155,13 @@ const App = () => {
 
   const sendDefinitionsRequest = (word: string) => {
     const socket = socketRef.current
+    const normalizedWord = normalizeDefinitionWord(word)
 
-    if (!word || !socket || socket.readyState !== WebSocket.OPEN) {
+    if (!normalizedWord || !socket || socket.readyState !== WebSocket.OPEN) {
       return
     }
 
-    const requestSignature = getDefinitionRequestSignature(word, targetLanguage, selectedModel)
+    const requestSignature = getDefinitionRequestSignature(normalizedWord, targetLanguage, selectedModel)
 
     if (lastDefinitionRequestSignatureRef.current === requestSignature) {
       return
@@ -171,7 +176,7 @@ const App = () => {
     const request: TranslateWsDefinitionsRequestMessage = {
       type: "translate.definitions.request",
       requestId,
-      word,
+      word: normalizedWord,
       targetLanguage,
       model: selectedModel
     }
@@ -182,7 +187,7 @@ const App = () => {
   }
 
   const getCachedDefinitions = (words: string[]) => {
-    const uniqueWords = Array.from(new Set(words))
+    const uniqueWords = getUniqueDefinitionWords(words)
     return uniqueWords
       .map((word) => ({
         word,
@@ -192,20 +197,22 @@ const App = () => {
   }
 
   const getMissingDefinitionWords = (words: string[]) => {
-    const uniqueWords = Array.from(new Set(words))
+    const uniqueWords = getUniqueDefinitionWords(words)
     const cachedWordSet = new Set(getCachedDefinitions(uniqueWords).map((entry) => entry.word))
     return uniqueWords.filter((word) => !cachedWordSet.has(word))
   }
 
   const writeDefinitionsToCache = (definitions: TranslateWordDefinition[]) => {
     definitions.forEach(({ word, definition }) => {
-      if (!word || !definition) {
+      const normalizedWord = normalizeDefinitionWord(word)
+
+      if (!normalizedWord || !definition) {
         return
       }
 
-      definitionCacheRef.current[word] = definition
-      definitionCacheOrderRef.current = definitionCacheOrderRef.current.filter((cachedWord) => cachedWord !== word)
-      definitionCacheOrderRef.current.push(word)
+      definitionCacheRef.current[normalizedWord] = definition
+      definitionCacheOrderRef.current = definitionCacheOrderRef.current.filter((cachedWord) => cachedWord !== normalizedWord)
+      definitionCacheOrderRef.current.push(normalizedWord)
 
       while (definitionCacheOrderRef.current.length > definitionCacheMaxItems) {
         const oldestWord = definitionCacheOrderRef.current.shift()
@@ -554,19 +561,22 @@ const App = () => {
   }, [selectedOutputWords, isSocketOpen, selectedModel, targetLanguage])
 
   const definitionByWord = new Map(
-    wordDefinitions.map((entry) => [entry.word, entry.definition])
+    wordDefinitions.map((entry) => [normalizeDefinitionWord(entry.word), entry.definition])
   )
   const transliterationByWord = new Map<string, string>()
 
   outputWords.forEach((word, index) => {
-    if (transliterationByWord.has(word)) {
+    const normalizedWord = normalizeDefinitionWord(word)
+    const transliterationKey = normalizedWord || word
+
+    if (transliterationByWord.has(transliterationKey)) {
       return
     }
 
     const transliteration = outputTransliteration[index]
 
     if (transliteration) {
-      transliterationByWord.set(word, transliteration)
+      transliterationByWord.set(transliterationKey, transliteration)
     }
   })
 
@@ -634,8 +644,9 @@ const App = () => {
         />
 
         {selectedOutputWords.map((word, index) => {
-          const definition = definitionByWord.get(word) || ""
-          const transliteration = transliterationByWord.get(word) || ""
+          const normalizedWord = normalizeDefinitionWord(word)
+          const definition = definitionByWord.get(normalizedWord) || ""
+          const transliteration = transliterationByWord.get(normalizedWord || word) || ""
           const wordWithTransliteration = transliteration ? `${word} (${transliteration})` : word
           const paneValue = definition ? `${wordWithTransliteration} — ${definition}` : wordWithTransliteration
 

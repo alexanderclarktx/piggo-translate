@@ -302,16 +302,13 @@ const getResponseTextFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
 
 const buildTranslationPrompt = (text: string, targetLanguage: string) => {
   return (
-    `Translate the following text to ${targetLanguage}.\n` +
-    "Return only a valid JSON array with this shape:\n" +
-    `[{"word":"...","literal":"..."}]\n` +
-    "Each array item must represent one translated word and its pronunciation.\n" +
-    "Attach punctuation to the nearest word so joining words with spaces reads naturally.\n" +
-    "For Chinese output, each item must be a complete Chinese word (multi-character words are allowed and expected).\n" +
+    `Translate the following text to ${targetLanguage}: ${text}\n` +
+    "Return only a valid JSON array with the shape: [{\"word\":\"...\",\"literal\":\"...\"}]\n" +
+    "each \"literal\" is a transliteration in the source language. for chinese, you must use pinyin with tone marks.\n" +
+    "For Chinese output, each word must be a complete Chinese word (can be multi-character).\n" +
+    "Attach punctuation to the nearest word.\n" +
     "Do not include empty strings.\n" +
-    "The literal value must use the source input's alphabet/script (for Chinese, use pinyin).\n" +
-    "Do not include markdown, code fences, or explanations.\n\n" +
-    text
+    "Do not include markdown, code fences, or explanations.\n\n"
   )
 }
 

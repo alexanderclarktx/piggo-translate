@@ -4,6 +4,9 @@ const textPaneAnimationMinIntervalMs = 10
 const textPaneAnimationMaxIntervalMs = 110
 const textPaneAnimationFastThreshold = 24
 const selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu
+const selectionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
+
+const getSelectionWord = (value: string) => value.replace(selectionWordStripPattern, "")
 
 const getSharedPrefixLength = (left: string, right: string) => {
   const maxLength = Math.min(left.length, right.length)
@@ -224,11 +227,11 @@ const TextPane = ({
         [anchorTokenElement, focusTokenElement].find((tokenElement) =>
           !!tokenElement &&
           contentElement.contains(tokenElement) &&
-          !!(tokenElement.textContent || "").trim()
+          !!tokenElement.dataset.selectionWord
         ) ||
         tokenElements.find((tokenElement) =>
           range.intersectsNode(tokenElement) &&
-          !!(tokenElement.textContent || "").trim()
+          !!tokenElement.dataset.selectionWord
         ) ||
         null
 
@@ -238,7 +241,7 @@ const TextPane = ({
         return
       }
 
-      const selectedWord = (selectedTokenElement.textContent || "").trim()
+      const selectedWord = selectedTokenElement.dataset.selectionWord || getSelectionWord(selectedTokenElement.textContent || "")
       const nextSelectionKey = selectedWord
 
       if (!nextSelectionKey) {
@@ -336,7 +339,7 @@ const TextPane = ({
           aria-label={ariaLabel}
           onMouseDown={(event) => {
             const tokenElement = (event.target as Element).closest<HTMLSpanElement>(".pane-text-token")
-            const isWordToken = !!tokenElement && !!(tokenElement.textContent || "").trim()
+            const isWordToken = !!tokenElement && !!tokenElement.dataset.selectionWord
 
             if (!isWordToken) {
               clearSelectableOutputSelection()
@@ -345,14 +348,17 @@ const TextPane = ({
         >
           {selectableTokens.map((token, tokenIndex) => {
             const isWhitespaceToken = !token.trim()
+            const selectionWord = getSelectionWord(token)
+            const isSelectableToken = !!selectionWord
             const tokenClassName = isWhitespaceToken ? "pane-text-token pane-text-token-space" : "pane-text-token"
 
             return (
               <span key={`${token}-${tokenIndex}`}>
                 <span
                   className={tokenClassName}
+                  data-selection-word={selectionWord}
                   onMouseDown={(event) => {
-                    if (isWhitespaceToken) {
+                    if (isWhitespaceToken || !isSelectableToken) {
                       return
                     }
 
