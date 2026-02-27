@@ -349,7 +349,7 @@ main {
   padding: 0;
   margin: 0;
   white-space: nowrap;
-  transition: transform 220ms ease, opacity 220ms ease, font-weight 120ms ease;
+  transition: transform 220ms ease, opacity 220ms ease, font-weight 120ms ease, visibility 0s linear 220ms;
 }
 
 .input-pane-target-language-option:hover {
@@ -368,6 +368,19 @@ main {
   visibility: visible;
   pointer-events: auto;
   transform: translateX(0) scale(1);
+  transition: transform 220ms ease, opacity 220ms ease, font-weight 120ms ease, visibility 0s linear 0s;
+}
+
+.input-pane-language-menu.input-pane-language-menu-dismissed .input-pane-target-language-dropdown {
+  pointer-events: none;
+}
+
+.input-pane-language-menu.input-pane-language-menu-dismissed .input-pane-target-language-option {
+  opacity: 0;
+  visibility: visible;
+  pointer-events: none;
+  transform: translateX(0.9rem) scale(0.96);
+  transition: transform 220ms ease, opacity 220ms ease, font-weight 120ms ease, visibility 0s linear 220ms;
 }
 
 .pane {
