@@ -43,7 +43,7 @@ type TransliterationProps = {
 }
 
 const Transliteration = ({ value, isVisible, onToggle }: TransliterationProps) => {
-  const [text, setText] = useState(value)
+  const [text, setText] = useState("")
   const [desiredText, setDesiredText] = useState(value)
   const hasValue = Boolean(value)
   const isExpanded = hasValue && isVisible
