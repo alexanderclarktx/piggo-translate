@@ -311,11 +311,12 @@ const TextPane = ({
               <span key={`${token}-${tokenIndex}`}>
                 <span
                   className={tokenClassName}
-                  onClick={(event) => {
+                  onMouseDown={(event) => {
                     if (isWhitespaceToken) {
                       return
                     }
 
+                    event.preventDefault()
                     selectToken(event.currentTarget)
                   }}
                 >

@@ -299,6 +299,11 @@ const App = () => {
         setIsTranslating(false)
 
         if (message.type === "translate.success") {
+          const selection = window.getSelection()
+          if (selection) {
+            selection.removeAllRanges()
+          }
+
           setOutputWords(message.words)
           setOutputTransliteration(message.transliteration)
           setSelectedOutputWords([])
