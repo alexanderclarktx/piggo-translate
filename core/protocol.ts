@@ -15,7 +15,7 @@ type TranslateWsReadyMessage = {
 type TranslateWsSuccessMessage = {
   type: "translate.success"
   requestId: string
-  text: string
+  words: string[]
   transliteration: string
 }
 

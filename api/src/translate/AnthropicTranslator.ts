@@ -79,10 +79,6 @@ export const AnthropicTranslator = (): Translator => ({
 
     const structuredTranslation = parseStructuredTranslation(data.content)
 
-    if (!structuredTranslation.translation) {
-      throw new Error("Anthropic returned an empty translation")
-    }
-
     return structuredTranslation
   }
 })
@@ -130,7 +126,11 @@ const parseStructuredTranslation = (content?: AnthropicMessageContentBlock[]) =>
   }
 
   return {
-    translation,
+    words: splitTranslationWords(translation),
     transliteration
   }
+}
+
+const splitTranslationWords = (translation: string) => {
+  return translation.match(/[\p{Script=Han}]+|[^\s]+/gu) ?? [translation]
 }

@@ -24,7 +24,7 @@ type OpenAiRealtimeServerEvent = {
 }
 
 type TranslationStructuredOutput = {
-  translation: string
+  words: string[]
   transliteration: string
 }
 
@@ -221,13 +221,6 @@ const parseStructuredTranslation = (rawText: string) => {
     throw new Error("OpenAI returned invalid structured JSON")
   }
 
-  const translation =
-    parsed &&
-      typeof parsed === "object" &&
-      "translation" in parsed &&
-      typeof parsed.translation === "string"
-      ? parsed.translation.trim()
-      : ""
   const transliteration =
     parsed &&
       typeof parsed === "object" &&
@@ -235,17 +228,26 @@ const parseStructuredTranslation = (rawText: string) => {
       typeof parsed.transliteration === "string"
       ? parsed.transliteration.trim()
       : ""
-
-  if (!translation) {
-    throw new Error("OpenAI structured response missing 'translation'")
-  }
+  const words =
+    parsed &&
+      typeof parsed === "object" &&
+      "words" in parsed &&
+      Array.isArray(parsed.words)
+      ? parsed.words.filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean)
+      : []
 
   if (!transliteration) {
     throw new Error("OpenAI structured response missing 'transliteration'")
   }
 
+  if (!words.length) {
+    throw new Error("OpenAI structured response missing 'words'")
+  }
+
   return {
-    translation,
+    words,
     transliteration
   } satisfies TranslationStructuredOutput
 }
@@ -265,7 +267,11 @@ const buildTranslationPrompt = (text: string, targetLanguage: string) => {
   return (
     `Translate the following text to ${targetLanguage}.\n` +
     "Return only a valid JSON object with exactly these keys:\n" +
-    `{"translation":"...","transliteration":"..."}\n` +
+    `{"words":["..."],"transliteration":"..."}\n` +
+    "The words array must contain one translated word per item.\n" +
+    "Attach punctuation to the nearest word so joining words with spaces reads naturally.\n" +
+    "For Chinese output, each item must be a complete Chinese word (multi-character words are allowed and expected).\n" +
+    "Do not include spaces or empty strings as array items.\n" +
     "The transliteration must be the pronunciation (or pinyin in the case of Chinese) of the translated text written using the source input's alphabet/script.\n" +
     "Do not include markdown, code fences, or explanations.\n\n" +
     text

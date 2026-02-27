@@ -168,7 +168,7 @@ export const createApiServer = () => {
           ws.send(JSON.stringify({
             type: "translate.success",
             requestId: parsedMessage.requestId,
-            text: translatedOutput.translation,
+            words: translatedOutput.words,
             transliteration: translatedOutput.transliteration
           }))
         } catch (error) {

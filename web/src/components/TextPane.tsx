@@ -54,10 +54,12 @@ type TextPaneProps = {
   showHeader: boolean
   textareaRef?: MutableRefObject<HTMLTextAreaElement | null>
   enableTokenSelection?: boolean
+  selectionWords?: string[]
+  selectionWordJoiner?: string
 }
 
 const TextPane = ({
-  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, onSelectionChange, showHeader, textareaRef, enableTokenSelection
+  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, onSelectionChange, showHeader, textareaRef, enableTokenSelection, selectionWords, selectionWordJoiner = " "
 }: TextPaneProps) => {
   const localTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const textContentRef = useRef<HTMLDivElement | null>(null)
@@ -65,7 +67,11 @@ const TextPane = ({
   const [text, setText] = useState(value)
   const [desiredText, setDesiredText] = useState(value)
   const paneClassName = [showHeader ? "pane" : "pane pane-no-header", className].filter(Boolean).join(" ")
-  const selectableTokens = text.match(selectableOutputTokenPattern) ?? []
+  const selectableTokens =
+    selectionWords && selectionWords.length
+      ? selectionWords
+      : text.match(selectableOutputTokenPattern) ?? []
+  const shouldUseWordJoiner = !!selectionWords && selectionWords.length > 1
   const shouldRenderSelectableOutput = !!enableTokenSelection
 
   useEffect(() => {
@@ -246,18 +252,20 @@ const TextPane = ({
             const tokenClassName = isWhitespaceToken ? "pane-text-token pane-text-token-space" : "pane-text-token"
 
             return (
-              <span
-                key={`${token}-${tokenIndex}`}
-                className={tokenClassName}
-                onClick={(event) => {
-                  if (isWhitespaceToken) {
-                    return
-                  }
+              <span key={`${token}-${tokenIndex}`}>
+                <span
+                  className={tokenClassName}
+                  onClick={(event) => {
+                    if (isWhitespaceToken) {
+                      return
+                    }
 
-                  selectToken(event.currentTarget)
-                }}
-              >
-                {token}
+                    selectToken(event.currentTarget)
+                  }}
+                >
+                  {token}
+                </span>
+                {shouldUseWordJoiner && tokenIndex < selectableTokens.length - 1 ? selectionWordJoiner : null}
               </span>
             )
           })}
@@ -288,10 +296,6 @@ const TextPane = ({
             setText(nextValue)
             setDesiredText(nextValue)
             onChange?.(nextValue)
-          }}
-          style={{
-            textAlign: "center",
-            // transform: "translate(-50%)"
           }}
         />
       )}

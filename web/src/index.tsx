@@ -20,6 +20,11 @@ const getTranslateWsUrl = () => {
 }
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
+const isSpaceSeparatedLanguage = (language: string) =>
+  !language.toLowerCase().includes("chinese") &&
+  !language.toLowerCase().includes("japanese")
+const joinOutputWords = (words: string[], targetLanguage: string) =>
+  words.join(isSpaceSeparatedLanguage(targetLanguage) ? " " : "")
 
 const isEditableElement = (element: Element | null) => {
   if (!(element instanceof HTMLElement)) {
@@ -44,7 +49,7 @@ const getRequestSignature = ({ text, targetLanguage, model }: { text: string, ta
 
 const App = () => {
   const [inputText, setInputText] = useState("")
-  const [outputText, setOutputText] = useState("")
+  const [outputWords, setOutputWords] = useState<string[]>([])
   const [outputTransliteration, setOutputTransliteration] = useState("")
   const [isTransliterationVisible, setIsTransliterationVisible] = useState(true)
   const [errorText, setErrorText] = useState("")
@@ -184,7 +189,7 @@ const App = () => {
         setIsTranslating(false)
 
         if (message.type === "translate.success") {
-          setOutputText(message.text)
+          setOutputWords(message.words)
           setOutputTransliteration(message.transliteration)
           setErrorText("")
           return
@@ -304,7 +309,7 @@ const App = () => {
     currentNormalizedInputTextRef.current = normalizedInputText
 
     if (!trimmedText) {
-      setOutputText("")
+      setOutputWords([])
       setOutputTransliteration("")
       setErrorText("")
       setDebouncedRequest(null)
@@ -332,7 +337,7 @@ const App = () => {
     const trimmedText = inputText.trim()
 
     if (!trimmedText) {
-      setOutputText("")
+      setOutputWords([])
       setOutputTransliteration("")
       setErrorText("")
       setDebouncedRequest(null)
@@ -405,7 +410,9 @@ const App = () => {
           className={hasInputText ? undefined : "pane-transparent"}
           placeholder=""
           ariaLabel="Translated text"
-          value={hasInputText ? outputText : ""}
+          value={hasInputText ? joinOutputWords(outputWords, targetLanguage) : ""}
+          selectionWords={hasInputText ? outputWords : []}
+          selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
           autoFocus={false}
           footer={hasInputText ? (
             <Transliteration
