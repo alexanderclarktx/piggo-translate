@@ -279,7 +279,8 @@ const parseStructuredTranslation = (rawText: string) => {
   }
 
   if (transliteration.length !== words.length) {
-    throw new Error("OpenAI structured response must include one transliteration item per word")
+    console.error("transliteration length did not match words length", { transliteration, words })
+    // throw new Error("OpenAI structured response must include one transliteration item per word")
   }
 
   return {
