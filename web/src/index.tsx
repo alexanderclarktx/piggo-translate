@@ -359,21 +359,13 @@ const App = () => {
       return
     }
 
-    if (!isSocketOpen) {
-      return
-    }
+    if (!isSocketOpen) return
 
-    const timeoutId = window.setTimeout(() => {
-      clientRef.current?.sendDefinitionsRequest({
-        word: missingWords[0],
-        targetLanguage,
-        model: selectedModel
-      })
-    }, 200)
-
-    return () => {
-      window.clearTimeout(timeoutId)
-    }
+    clientRef.current?.sendDefinitionsRequest({
+      word: missingWords[0],
+      targetLanguage,
+      model: selectedModel
+    })
   }, [selectedOutputWords, isSocketOpen, selectedModel, targetLanguage])
 
   const definitionByWord = new Map(
@@ -507,7 +499,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.1.8
+          v0.2.1
         </span>
       )}
     </main>

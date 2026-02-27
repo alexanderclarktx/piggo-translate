@@ -1,6 +1,6 @@
 :root {
   font-family: "Helvetica Neue", Arial, sans-serif;
-  font-size: 26px;
+  font-size: 1.6rem;
   background-color: #27252b;
   color: #1c2024;
 }
@@ -70,8 +70,8 @@ select {
 
 .title-icon {
   /* justify-self: center; */
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.7rem;
+  height: 1.7rem;
   user-select: none;
 }
 
