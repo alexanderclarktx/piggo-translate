@@ -238,20 +238,6 @@ main {
   color: #9d1d1d;
 }
 
-.pane-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  box-sizing: border-box;
-  width: calc(100vw - 4rem);
-  max-width: 600px;
-  position: fixed;
-  left: 50%;
-  top: 50vh;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-}
-
 .pane-stack-connection-dot {
   position: absolute;
   top: -0.8rem;
@@ -282,13 +268,23 @@ main {
   transition: height 500ms ease;
 }
 
+.pane-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  left: 50%;
+  z-index: 1;
+}
+
 .pane {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  max-width: 600px;
+  width: 100%;
   cursor: initial;
   position: relative;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;

@@ -368,9 +368,9 @@ const App = () => {
         gap: "0.5rem",
         marginBottom: "1rem",
         flexDirection: "column",
-        position: "fixed",
+        // position: "fixed",
         left: "50%",
-        transform: "translate(-50%)"
+        // transform: "translate(-50%)"
       }}>
         <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" />
         <h1>
