@@ -1,6 +1,4 @@
-import {
-  Model
-} from "@template/core"
+import { Model } from "@template/core"
 import { httpJson, httpText, OpenAiTranslator } from "@template/api"
 
 const logServerError = (context: string, error: unknown) => {
