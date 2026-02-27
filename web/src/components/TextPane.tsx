@@ -137,6 +137,7 @@ type TextPaneProps = {
   showHeader: boolean
   textareaRef?: MutableRefObject<HTMLTextAreaElement | null>
   enableTokenSelection?: boolean
+  animateOnMount?: boolean
   selectionWords?: string[]
   selectionTokens?: {
     value: string
@@ -147,12 +148,14 @@ type TextPaneProps = {
 }
 
 const TextPane = ({
-  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, onSelectionChange, showHeader, textareaRef, enableTokenSelection, selectionWords, selectionTokens, selectionWordJoiner = " "
+  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, onSelectionChange, showHeader, textareaRef, enableTokenSelection, animateOnMount, selectionWords, selectionTokens, selectionWordJoiner = " "
 }: TextPaneProps) => {
   const localTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const textContentRef = useRef<HTMLDivElement | null>(null)
   const lastSelectionRef = useRef("")
-  const [text, setText] = useState(value)
+  const shouldAnimateOnMountRef = useRef(!!animateOnMount)
+  const initialText = shouldAnimateOnMountRef.current ? "" : value
+  const [text, setText] = useState(initialText)
   const [desiredText, setDesiredText] = useState(value)
   const paneClassName = [showHeader ? "pane" : "pane pane-no-header", className].filter(Boolean).join(" ")
   const normalizedSelectionTokens =
@@ -195,6 +198,9 @@ const TextPane = ({
   const shouldRenderSelectableOutput = !!enableTokenSelection
 
   useEffect(() => {
+    if (shouldAnimateOnMountRef.current) {
+      shouldAnimateOnMountRef.current = false
+    }
     setDesiredText(selectableTextTarget)
 
     // if (!readOnly) {

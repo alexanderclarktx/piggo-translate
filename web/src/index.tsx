@@ -141,6 +141,7 @@ const App = () => {
   const definitionCacheOrderRef = useRef<string[]>([])
   const normalizedInputText = normalizeText(inputText)
   const hasInputText = !!normalizedInputText
+  const hasOutputWords = outputWords.length > 0
   const isSpinnerVisible =
     isTranslating &&
     !!latestRequestSnapshot.id &&
@@ -650,34 +651,36 @@ const App = () => {
           readOnly={false}
         />
 
-        <TextPane
-          id="output-pane-title"
-          title="Translated Output"
-          showHeader={false}
-          className={hasInputText ? undefined : "pane-transparent"}
-          placeholder=""
-          ariaLabel="Translated text"
-          value={hasInputText ? joinOutputTokens(outputWords, targetLanguage, "word") : ""}
-          selectionTokens={hasInputText ? outputWords.map((token) => ({
-            value: token.word,
-            selectionWord: token.word,
-            selectable: !token.punctuation
-          })) : []}
-          selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
-          autoFocus={false}
-          footer={hasInputText ? (
-            <Transliteration
-              value={joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true })}
-              isVisible={isTransliterationVisible}
-              onToggle={() => setIsTransliterationVisible((value) => !value)}
-            />
-          ) : null}
-          readOnly
-          enableTokenSelection
-          onSelectionChange={(selectionWords) => {
-            setSelectedOutputWords(selectionWords)
-          }}
-        />
+        {hasOutputWords ? (
+          <TextPane
+            id="output-pane-title"
+            title="Translated Output"
+            showHeader={false}
+            placeholder=""
+            ariaLabel="Translated text"
+            value={joinOutputTokens(outputWords, targetLanguage, "word")}
+            selectionTokens={outputWords.map((token) => ({
+              value: token.word,
+              selectionWord: token.word,
+              selectable: !token.punctuation
+            }))}
+            selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
+            autoFocus={false}
+            animateOnMount
+            footer={(
+              <Transliteration
+                value={joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true })}
+                isVisible={isTransliterationVisible}
+                onToggle={() => setIsTransliterationVisible((value) => !value)}
+              />
+            )}
+            readOnly
+            enableTokenSelection
+            onSelectionChange={(selectionWords) => {
+              setSelectedOutputWords(selectionWords)
+            }}
+          />
+        ) : null}
 
         {selectedOutputWords.map((word, index) => {
           const normalizedWord = normalizeDefinitionWord(word)

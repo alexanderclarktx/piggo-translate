@@ -17111,6 +17111,8 @@ var textPaneAnimationMinIntervalMs = 10;
 var textPaneAnimationMaxIntervalMs = 110;
 var textPaneAnimationFastThreshold = 24;
 var selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu;
+var selectionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
+var getSelectionWord = (value) => value.replace(selectionWordStripPattern, "");
 var getSharedPrefixLength = (left, right) => {
   const maxLength = Math.min(left.length, right.length);
   let index = 0;
@@ -17135,6 +17137,51 @@ var getDynamicIntervalDuration = (currentText, desiredText) => {
   const result = Math.round(textPaneAnimationMaxIntervalMs - intervalRange * clampedProgress);
   return result;
 };
+var buildSelectableDisplayText = (tokens, shouldUseWordJoiner, selectionWordJoiner) => {
+  if (!tokens.length) {
+    return "";
+  }
+  return tokens.reduce((result, token, tokenIndex) => {
+    const joiner = shouldUseWordJoiner && tokenIndex < tokens.length - 1 ? selectionWordJoiner : "";
+    return `${result}${token.value}${joiner}`;
+  }, "");
+};
+var getAnimatedSelectableTokens = (targetTokens, animatedText, shouldUseWordJoiner, selectionWordJoiner) => {
+  if (!targetTokens.length || !animatedText) {
+    return [];
+  }
+  let remainingText = animatedText;
+  const nextTokens = targetTokens.flatMap((token, tokenIndex) => {
+    if (!remainingText) {
+      return [];
+    }
+    const visibleTokenValue = remainingText.slice(0, token.value.length);
+    remainingText = remainingText.slice(visibleTokenValue.length);
+    const tokenEntries = [];
+    const isTokenFullyVisible = visibleTokenValue.length === token.value.length;
+    if (visibleTokenValue) {
+      tokenEntries.push({
+        value: visibleTokenValue,
+        selectionWord: isTokenFullyVisible ? token.selectionWord : "",
+        selectable: isTokenFullyVisible ? token.selectable : false
+      });
+    }
+    const shouldAppendJoiner = shouldUseWordJoiner && tokenIndex < targetTokens.length - 1 && !!selectionWordJoiner;
+    if (shouldAppendJoiner && remainingText) {
+      const visibleJoinerValue = remainingText.slice(0, selectionWordJoiner.length);
+      if (visibleJoinerValue) {
+        tokenEntries.push({
+          value: visibleJoinerValue,
+          selectionWord: "",
+          selectable: false
+        });
+        remainingText = remainingText.slice(visibleJoinerValue.length);
+      }
+    }
+    return tokenEntries;
+  });
+  return nextTokens;
+};
 var TextPane = ({
   id,
   title,
@@ -17151,22 +17198,46 @@ var TextPane = ({
   showHeader,
   textareaRef,
   enableTokenSelection,
+  animateOnMount,
   selectionWords,
+  selectionTokens,
   selectionWordJoiner = " "
 }) => {
   const localTextareaRef = import_react.useRef(null);
   const textContentRef = import_react.useRef(null);
   const lastSelectionRef = import_react.useRef("");
-  const [text, setText] = import_react.useState(value);
+  const shouldAnimateOnMountRef = import_react.useRef(!!animateOnMount);
+  const initialText = shouldAnimateOnMountRef.current ? "" : value;
+  const [text, setText] = import_react.useState(initialText);
   const [desiredText, setDesiredText] = import_react.useState(value);
   const paneClassName = [showHeader ? "pane" : "pane pane-no-header", className].filter(Boolean).join(" ");
-  const shouldUseSelectionWords = !!selectionWords && selectionWords.length > 0 && text === desiredText;
-  const selectableTokens = shouldUseSelectionWords ? selectionWords : text.match(selectableOutputTokenPattern) ?? [];
-  const shouldUseWordJoiner = shouldUseSelectionWords && selectionWords.length > 1;
+  const normalizedSelectionTokens = selectionTokens && selectionTokens.length ? selectionTokens : selectionWords && selectionWords.length ? selectionWords.map((value2) => {
+    const selectionWord = getSelectionWord(value2);
+    return {
+      value: value2,
+      selectionWord,
+      selectable: !!selectionWord
+    };
+  }) : [];
+  const shouldUseSelectionTokens = normalizedSelectionTokens.length > 0;
+  const shouldUseWordJoiner = shouldUseSelectionTokens && normalizedSelectionTokens.length > 1;
+  const selectableTextTarget = shouldUseSelectionTokens ? buildSelectableDisplayText(normalizedSelectionTokens, shouldUseWordJoiner, selectionWordJoiner) : value;
+  const staticSelectableTokens = shouldUseSelectionTokens ? normalizedSelectionTokens : (text.match(selectableOutputTokenPattern) ?? []).map((token) => {
+    const selectionWord = getSelectionWord(token);
+    return {
+      value: token,
+      selectionWord,
+      selectable: !!selectionWord
+    };
+  });
+  const selectableTokens = shouldUseSelectionTokens ? getAnimatedSelectableTokens(staticSelectableTokens, text, shouldUseWordJoiner, selectionWordJoiner) : staticSelectableTokens;
   const shouldRenderSelectableOutput = !!enableTokenSelection;
   import_react.useEffect(() => {
-    setDesiredText(value);
-  }, [readOnly, value]);
+    if (shouldAnimateOnMountRef.current) {
+      shouldAnimateOnMountRef.current = false;
+    }
+    setDesiredText(selectableTextTarget);
+  }, [readOnly, selectableTextTarget]);
   import_react.useEffect(() => {
     if (!desiredText) {
       setText("");
@@ -17270,13 +17341,13 @@ var TextPane = ({
       const tokenElements = Array.from(contentElement.querySelectorAll(".pane-text-token"));
       const anchorTokenElement = getTokenElementFromNode(selection.anchorNode);
       const focusTokenElement = getTokenElementFromNode(selection.focusNode);
-      const selectedTokenElement = [anchorTokenElement, focusTokenElement].find((tokenElement) => !!tokenElement && contentElement.contains(tokenElement) && !!(tokenElement.textContent || "").trim()) || tokenElements.find((tokenElement) => range.intersectsNode(tokenElement) && !!(tokenElement.textContent || "").trim()) || null;
+      const selectedTokenElement = [anchorTokenElement, focusTokenElement].find((tokenElement) => !!tokenElement && contentElement.contains(tokenElement) && !!tokenElement.dataset.selectionWord) || tokenElements.find((tokenElement) => range.intersectsNode(tokenElement) && !!tokenElement.dataset.selectionWord) || null;
       if (!selectedTokenElement) {
         updateSelectedTokenStyles(null);
         clearSelection();
         return;
       }
-      const selectedWord = (selectedTokenElement.textContent || "").trim();
+      const selectedWord = selectedTokenElement.dataset.selectionWord || getSelectionWord(selectedTokenElement.textContent || "");
       const nextSelectionKey = selectedWord;
       if (!nextSelectionKey) {
         updateSelectedTokenStyles(null);
@@ -17355,30 +17426,38 @@ var TextPane = ({
         "aria-label": ariaLabel,
         onMouseDown: (event) => {
           const tokenElement = event.target.closest(".pane-text-token");
-          const isWordToken = !!tokenElement && !!(tokenElement.textContent || "").trim();
+          const isWordToken = !!tokenElement && !!tokenElement.dataset.selectionWord;
           if (!isWordToken) {
             clearSelectableOutputSelection();
           }
         },
         children: selectableTokens.map((token, tokenIndex) => {
-          const isWhitespaceToken = !token.trim();
-          const tokenClassName = isWhitespaceToken ? "pane-text-token pane-text-token-space" : "pane-text-token";
+          const tokenValue = token.value;
+          const isWhitespaceToken = !tokenValue.trim();
+          const selectionWord = token.selectionWord ?? getSelectionWord(tokenValue);
+          const isSelectableToken = token.selectable ?? !!selectionWord;
+          const tokenClassName = [
+            "pane-text-token",
+            isWhitespaceToken ? "pane-text-token-space" : "",
+            isSelectableToken ? "pane-text-token-selectable" : "pane-text-token-nonselectable"
+          ].filter(Boolean).join(" ");
           return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
             children: [
               /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
                 className: tokenClassName,
+                "data-selection-word": isSelectableToken ? selectionWord : "",
                 onMouseDown: (event) => {
-                  if (isWhitespaceToken) {
+                  if (isWhitespaceToken || !isSelectableToken) {
                     return;
                   }
                   event.preventDefault();
                   selectToken(event.currentTarget);
                 },
-                children: token
+                children: tokenValue
               }, undefined, false, undefined, this),
               shouldUseWordJoiner && tokenIndex < selectableTokens.length - 1 ? selectionWordJoiner : null
             ]
-          }, `${token}-${tokenIndex}`, true, undefined, this);
+          }, `${tokenValue}-${tokenIndex}`, true, undefined, this);
         })
       }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("textarea", {
         ref: (node) => {
@@ -17510,9 +17589,33 @@ var getTranslateWsUrl = () => {
   return hostname === "localhost" ? "http://localhost:5001/api/ws" : "https://piggo-translate-production.up.railway.app/api/ws";
 };
 var normalizeText = (text) => text.replace(/\s+/g, " ").trim();
+var definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
+var normalizeDefinitionWord = (word) => word.replace(definitionWordStripPattern, "");
+var getUniqueDefinitionWords = (words) => Array.from(new Set(words.map((word) => normalizeDefinitionWord(word)).filter(Boolean)));
 var isSpaceSeparatedLanguage = (language) => !language.toLowerCase().includes("chinese") && !language.toLowerCase().includes("japanese");
-var joinOutputWords = (words, targetLanguage) => words.join(isSpaceSeparatedLanguage(targetLanguage) ? " " : "");
-var joinTransliterationWords = (words) => words.join(" ");
+var noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/;
+var noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/;
+var joinOutputTokens = (tokens, targetLanguage, tokenKey, options) => {
+  const useSpaces = options?.forceSpaceSeparated || isSpaceSeparatedLanguage(targetLanguage);
+  return tokens.reduce((result, token, tokenIndex) => {
+    const tokenValue = token[tokenKey];
+    if (!tokenValue) {
+      return result;
+    }
+    if (!result) {
+      return tokenValue;
+    }
+    if (!useSpaces) {
+      return `${result}${tokenValue}`;
+    }
+    const previousToken = tokens[tokenIndex - 1];
+    const previousWord = previousToken?.word || "";
+    const hasNoSpaceBefore = token.punctuation && noSpaceBeforePunctuationPattern.test(token.word);
+    const hasNoSpaceAfterPrevious = !!previousToken?.punctuation && noSpaceAfterPunctuationPattern.test(previousWord);
+    const joiner = hasNoSpaceBefore || hasNoSpaceAfterPrevious ? "" : " ";
+    return `${result}${joiner}${tokenValue}`;
+  }, "");
+};
 var isEditableElement = (element) => {
   if (!(element instanceof HTMLElement)) {
     return false;
@@ -17530,13 +17633,12 @@ var getRequestSignature = ({ text, targetLanguage, model }) => {
   return `${model}::${normalizedText}::${targetLanguage}`;
 };
 var getDefinitionRequestSignature = (word, targetLanguage, model) => {
-  return `${model}::${targetLanguage}::${word}`;
+  return `${model}::${targetLanguage}::${normalizeDefinitionWord(word)}`;
 };
 var definitionCacheMaxItems = 10;
 var App = () => {
   const [inputText, setInputText] = import_react3.useState("");
   const [outputWords, setOutputWords] = import_react3.useState([]);
-  const [outputTransliteration, setOutputTransliteration] = import_react3.useState([]);
   const [isTransliterationVisible, setIsTransliterationVisible] = import_react3.useState(true);
   const [errorText, setErrorText] = import_react3.useState("");
   const [isTranslating, setIsTranslating] = import_react3.useState(false);
@@ -17569,6 +17671,7 @@ var App = () => {
   const definitionCacheOrderRef = import_react3.useRef([]);
   const normalizedInputText = normalizeText(inputText);
   const hasInputText = !!normalizedInputText;
+  const hasOutputWords = outputWords.length > 0;
   const isSpinnerVisible = isTranslating && !!latestRequestSnapshot.id && normalizedInputText === latestRequestSnapshot.normalizedInputText;
   const sendTranslateRequest = (requestInput) => {
     const socket = socketRef.current;
@@ -17596,10 +17699,11 @@ var App = () => {
   };
   const sendDefinitionsRequest = (word) => {
     const socket = socketRef.current;
-    if (!word || !socket || socket.readyState !== WebSocket.OPEN) {
+    const normalizedWord = normalizeDefinitionWord(word);
+    if (!normalizedWord || !socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
-    const requestSignature = getDefinitionRequestSignature(word, targetLanguage, selectedModel);
+    const requestSignature = getDefinitionRequestSignature(normalizedWord, targetLanguage, selectedModel);
     if (lastDefinitionRequestSignatureRef.current === requestSignature) {
       return;
     }
@@ -17611,32 +17715,33 @@ var App = () => {
     const request = {
       type: "translate.definitions.request",
       requestId,
-      word,
+      word: normalizedWord,
       targetLanguage,
       model: selectedModel
     };
     socket.send(JSON.stringify(request));
   };
   const getCachedDefinitions = (words) => {
-    const uniqueWords = Array.from(new Set(words));
+    const uniqueWords = getUniqueDefinitionWords(words);
     return uniqueWords.map((word) => ({
       word,
       definition: definitionCacheRef.current[word] || ""
     })).filter((entry) => !!entry.definition);
   };
   const getMissingDefinitionWords = (words) => {
-    const uniqueWords = Array.from(new Set(words));
+    const uniqueWords = getUniqueDefinitionWords(words);
     const cachedWordSet = new Set(getCachedDefinitions(uniqueWords).map((entry) => entry.word));
     return uniqueWords.filter((word) => !cachedWordSet.has(word));
   };
   const writeDefinitionsToCache = (definitions) => {
     definitions.forEach(({ word, definition }) => {
-      if (!word || !definition) {
+      const normalizedWord = normalizeDefinitionWord(word);
+      if (!normalizedWord || !definition) {
         return;
       }
-      definitionCacheRef.current[word] = definition;
-      definitionCacheOrderRef.current = definitionCacheOrderRef.current.filter((cachedWord) => cachedWord !== word);
-      definitionCacheOrderRef.current.push(word);
+      definitionCacheRef.current[normalizedWord] = definition;
+      definitionCacheOrderRef.current = definitionCacheOrderRef.current.filter((cachedWord) => cachedWord !== normalizedWord);
+      definitionCacheOrderRef.current.push(normalizedWord);
       while (definitionCacheOrderRef.current.length > definitionCacheMaxItems) {
         const oldestWord = definitionCacheOrderRef.current.shift();
         if (!oldestWord) {
@@ -17716,8 +17821,8 @@ var App = () => {
           if (selection) {
             selection.removeAllRanges();
           }
+          console.log("got translation", message.words);
           setOutputWords(message.words);
-          setOutputTransliteration(message.transliteration);
           setSelectedOutputWords([]);
           setWordDefinitions([]);
           setIsDefinitionLoading(false);
@@ -17819,7 +17924,6 @@ var App = () => {
     currentNormalizedInputTextRef.current = normalizedInputText;
     if (!trimmedText) {
       setOutputWords([]);
-      setOutputTransliteration([]);
       setSelectedOutputWords([]);
       setWordDefinitions([]);
       setIsDefinitionLoading(false);
@@ -17847,7 +17951,6 @@ var App = () => {
     const trimmedText = inputText.trim();
     if (!trimmedText) {
       setOutputWords([]);
-      setOutputTransliteration([]);
       setSelectedOutputWords([]);
       setWordDefinitions([]);
       setIsDefinitionLoading(false);
@@ -17904,15 +18007,16 @@ var App = () => {
       window.clearTimeout(timeoutId);
     };
   }, [selectedOutputWords, isSocketOpen, selectedModel, targetLanguage]);
-  const definitionByWord = new Map(wordDefinitions.map((entry) => [entry.word, entry.definition]));
+  const definitionByWord = new Map(wordDefinitions.map((entry) => [normalizeDefinitionWord(entry.word), entry.definition]));
   const transliterationByWord = new Map;
-  outputWords.forEach((word, index) => {
-    if (transliterationByWord.has(word)) {
+  outputWords.filter(({ punctuation }) => !punctuation).forEach(({ word, literal }) => {
+    const normalizedWord = normalizeDefinitionWord(word);
+    const transliterationKey = normalizedWord || word;
+    if (transliterationByWord.has(transliterationKey)) {
       return;
     }
-    const transliteration = outputTransliteration[index];
-    if (transliteration) {
-      transliterationByWord.set(word, transliteration);
+    if (literal) {
+      transliterationByWord.set(transliterationKey, literal);
     }
   });
   return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("main", {
@@ -17951,31 +18055,36 @@ var App = () => {
             }, undefined, false, undefined, this) : null,
             readOnly: false
           }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
+          hasOutputWords ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
             id: "output-pane-title",
             title: "Translated Output",
             showHeader: false,
-            className: hasInputText ? undefined : "pane-transparent",
             placeholder: "",
             ariaLabel: "Translated text",
-            value: hasInputText ? joinOutputWords(outputWords, targetLanguage) : "",
-            selectionWords: hasInputText ? outputWords : [],
+            value: joinOutputTokens(outputWords, targetLanguage, "word"),
+            selectionTokens: outputWords.map((token) => ({
+              value: token.word,
+              selectionWord: token.word,
+              selectable: !token.punctuation
+            })),
             selectionWordJoiner: isSpaceSeparatedLanguage(targetLanguage) ? " " : "",
             autoFocus: false,
-            footer: hasInputText ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Transliteration, {
-              value: joinTransliterationWords(outputTransliteration),
+            animateOnMount: true,
+            footer: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Transliteration, {
+              value: joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true }),
               isVisible: isTransliterationVisible,
               onToggle: () => setIsTransliterationVisible((value) => !value)
-            }, undefined, false, undefined, this) : null,
+            }, undefined, false, undefined, this),
             readOnly: true,
             enableTokenSelection: true,
             onSelectionChange: (selectionWords) => {
               setSelectedOutputWords(selectionWords);
             }
-          }, undefined, false, undefined, this),
+          }, undefined, false, undefined, this) : null,
           selectedOutputWords.map((word, index) => {
-            const definition = definitionByWord.get(word) || "";
-            const transliteration = transliterationByWord.get(word) || "";
+            const normalizedWord = normalizeDefinitionWord(word);
+            const definition = definitionByWord.get(normalizedWord) || "";
+            const transliteration = transliterationByWord.get(normalizedWord || word) || "";
             const wordWithTransliteration = transliteration ? `${word} (${transliteration})` : word;
             const paneValue = definition ? `${wordWithTransliteration} — ${definition}` : wordWithTransliteration;
             return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
