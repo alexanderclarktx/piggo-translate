@@ -120,9 +120,8 @@ const App = () => {
     const headerSection = headerSectionRef.current
     const paneStack = paneStackRef.current
 
-    if (!headerSection || !paneStack) {
-      return
-    }
+    if (!headerSection || !paneStack) return
+    if (isMobile()) return
 
     const updatePaneStackMarginTop = () => {
       const minimumGapFromHeader = 16
@@ -143,14 +142,10 @@ const App = () => {
       updatePaneStackMarginTop()
     })
 
-    resizeObserver.observe(headerSection)
     resizeObserver.observe(paneStack)
-    window.addEventListener("resize", updatePaneStackMarginTop)
-    updatePaneStackMarginTop()
 
     return () => {
       resizeObserver.disconnect()
-      window.removeEventListener("resize", updatePaneStackMarginTop)
     }
   }, [])
 
@@ -512,7 +507,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.1.7
+          v0.1.8
         </span>
       )}
     </main>

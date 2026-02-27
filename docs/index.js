@@ -17905,9 +17905,10 @@ var App = () => {
   import_react3.useEffect(() => {
     const headerSection = headerSectionRef.current;
     const paneStack = paneStackRef.current;
-    if (!headerSection || !paneStack) {
+    if (!headerSection || !paneStack)
       return;
-    }
+    if (isMobile())
+      return;
     const updatePaneStackMarginTop = () => {
       const minimumGapFromHeader = 16;
       const minimumGapFromViewportBottom = 16;
@@ -17924,13 +17925,9 @@ var App = () => {
     const resizeObserver = new ResizeObserver(() => {
       updatePaneStackMarginTop();
     });
-    resizeObserver.observe(headerSection);
     resizeObserver.observe(paneStack);
-    window.addEventListener("resize", updatePaneStackMarginTop);
-    updatePaneStackMarginTop();
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("resize", updatePaneStackMarginTop);
     };
   }, []);
   const normalizedInputText = normalizeText2(inputText);
@@ -18227,7 +18224,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.1.7"
+        children: "v0.1.8"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
