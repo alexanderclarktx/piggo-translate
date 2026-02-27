@@ -11,7 +11,9 @@
 
 body {
   margin: 0;
-  padding: 2rem;
+  padding-top: 1.6rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
   user-select: none;
   cursor: default;
 }
@@ -23,12 +25,10 @@ body {
   box-shadow: 0 10px 30px rgba(16, 24, 32, 0.12);
 }
 
-h1 {
-  display: flex;
-  justify-content: center;
+.header-title {
   font-family: 'Courier New', monospace;
   font-weight: 400;
-  font-size: 1.3rem;
+  font-size: clamp(1rem, 8vw, 1.3rem);
   text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   margin: 0;
@@ -62,7 +62,7 @@ h1 {
 }
 
 .title-icon {
-  justify-self: center;
+  /* justify-self: center; */
   width: 1.6rem;
   height: 1.6rem;
   user-select: none;
@@ -81,8 +81,9 @@ main {
 .app-version {
   position: fixed;
   left: 0.75rem;
-  bottom: 0.5rem;
+  top: 0.5rem;
   font-size: 0.6rem;
+  font-weight: 500;
   font-family: 'Courier New', monospace;
   color: rgba(255, 255, 255, 0.55);
   user-select: none;
@@ -240,24 +241,10 @@ main {
   color: #9d1d1d;
 }
 
-.pane-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  box-sizing: border-box;
-  width: calc(100vw - 4rem);
-  max-width: 600px;
-  position: fixed;
-  left: 50%;
-  top: 50vh;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-}
-
 .pane-stack-connection-dot {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+  top: -0.8rem;
+  left: 0rem;
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
@@ -284,13 +271,24 @@ main {
   transition: height 500ms ease;
 }
 
+.pane-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  left: 50%;
+  margin-top: 0;
+  z-index: 1;
+}
+
 .pane {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(16, 24, 32, 0.12);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  max-width: 600px;
+  width: 100%;
   cursor: initial;
   position: relative;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
@@ -333,7 +331,7 @@ main {
 
 .pane-definition .pane-textarea {
   text-align: left;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
 }
 
 .pane-header {

@@ -17,12 +17,14 @@ Run these from the repo root:
 - Use 2-space indentation for TypeScript and CSS.
 - use PascalCase for class files, and lowercase filenames for everything else
 - prefer to place all destructured items in a single line like `{ dog, cat } = animals`
+- prefer to organize imports wide, evenly over multiple lines (never one per line)
 - never use `import type`
 - do not use `class`
   - instead create a `type` and corresponding function (with the same name) to return an instance of the type
 - do not end lines with semicolons
 - do not use `function`
   - instead create arrow functions
+- never use `export { func, type }`, instead just export them at their definition 
 
 ## Testing Guidelines
 - No test framework is configured yet. If you add tests, document the tool and command in this file.

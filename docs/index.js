@@ -17107,8 +17107,8 @@ var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
 // src/components/TextPane.tsx
 var import_react = __toESM(require_react(), 1);
 var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
-var textPaneAnimationMinIntervalMs = 10;
-var textPaneAnimationMaxIntervalMs = 110;
+var textPaneAnimationMinIntervalMs = 15;
+var textPaneAnimationMaxIntervalMs = 100;
 var textPaneAnimationFastThreshold = 24;
 var selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu;
 var selectionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
@@ -17519,7 +17519,7 @@ var getDynamicIntervalDuration2 = (currentText, desiredText) => {
   return Math.round(transliterationAnimationMaxIntervalMs - intervalRange * clampedProgress);
 };
 var Transliteration = ({ value, isVisible, onToggle }) => {
-  const [text, setText] = import_react2.useState(value);
+  const [text, setText] = import_react2.useState("");
   const [desiredText, setDesiredText] = import_react2.useState(value);
   const hasValue = Boolean(value);
   const isExpanded = hasValue && isVisible;
@@ -17573,6 +17573,252 @@ var Transliteration = ({ value, isVisible, onToggle }) => {
 };
 // src/components/TranslateToolbar.tsx
 var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
+// src/Cache.ts
+var definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
+var normalizeDefinition = (word) => word.replace(definitionWordStripPattern, "");
+var getUniqueDefinitionWords = (words) => Array.from(new Set(words.map((word) => normalizeDefinition(word)).filter(Boolean)));
+var Cache = (maxItems = 10) => {
+  const cache = {};
+  let cacheOrder = [];
+  const getCachedDefinitions = (words) => {
+    const uniqueWords = getUniqueDefinitionWords(words);
+    return uniqueWords.map((word) => ({
+      word,
+      definition: cache[word] || ""
+    })).filter((entry) => !!entry.definition);
+  };
+  const getMissingDefinitionWords = (words) => {
+    const uniqueWords = getUniqueDefinitionWords(words);
+    const cachedWordSet = new Set(getCachedDefinitions(uniqueWords).map((entry) => entry.word));
+    return uniqueWords.filter((word) => !cachedWordSet.has(word));
+  };
+  const writeDefinitionsToCache = (definitions) => {
+    definitions.forEach(({ word, definition }) => {
+      const normalizedWord = normalizeDefinition(word);
+      if (!normalizedWord || !definition) {
+        return;
+      }
+      cache[normalizedWord] = definition;
+      cacheOrder = cacheOrder.filter((cachedWord) => cachedWord !== normalizedWord);
+      cacheOrder.push(normalizedWord);
+      while (cacheOrder.length > maxItems) {
+        const oldestWord = cacheOrder.shift();
+        if (!oldestWord) {
+          return;
+        }
+        delete cache[oldestWord];
+      }
+    });
+  };
+  const clear = () => {
+    cacheOrder = [];
+    Object.keys(cache).forEach((word) => {
+      delete cache[word];
+    });
+  };
+  return {
+    getCachedDefinitions,
+    getMissingDefinitionWords,
+    writeDefinitionsToCache,
+    clear
+  };
+};
+// src/Client.ts
+var normalizeText = (text) => text.replace(/\s+/g, " ").trim();
+var getTranslateWsUrl = () => {
+  return isLocal() ? "http://localhost:5001/api/ws" : "https://piggo-translate-production.up.railway.app/api/ws";
+};
+var getRequestSignature = ({ text, targetLanguage, model }) => {
+  return `${model}::${normalizeText(text)}::${targetLanguage}`;
+};
+var getDefinitionRequestSignature = (word, targetLanguage, model) => {
+  return `${model}::${targetLanguage}::${normalizeDefinition(word)}`;
+};
+var Client = (options) => {
+  let socket = null;
+  let reconnectTimeoutId = null;
+  let isDisposed = false;
+  let requestCounter = 0;
+  let latestRequest = {
+    id: "",
+    normalizedInputText: ""
+  };
+  let currentNormalizedInputText = "";
+  let lastRequestedSignature = "";
+  let latestDefinitionsRequestId = "";
+  let lastDefinitionRequestSignature = "";
+  const clearReconnectTimeout = () => {
+    if (reconnectTimeoutId === null) {
+      return;
+    }
+    window.clearTimeout(reconnectTimeoutId);
+    reconnectTimeoutId = null;
+  };
+  const clearDefinitionRequestState = () => {
+    latestDefinitionsRequestId = "";
+    lastDefinitionRequestSignature = "";
+  };
+  const clearAllRequestState = () => {
+    latestRequest = { id: "", normalizedInputText: "" };
+    options.onLatestRequestChange(latestRequest);
+    currentNormalizedInputText = "";
+    lastRequestedSignature = "";
+    clearDefinitionRequestState();
+  };
+  const sendTranslateRequest = (requestInput) => {
+    if (!requestInput.text || !socket || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const requestSignature = getRequestSignature(requestInput);
+    if (lastRequestedSignature === requestSignature) {
+      return;
+    }
+    requestCounter += 1;
+    const requestId = `${Date.now()}-${requestCounter}`;
+    options.onErrorTextChange("");
+    options.onTranslatingChange(true);
+    latestRequest = {
+      id: requestId,
+      normalizedInputText: normalizeText(requestInput.text)
+    };
+    options.onLatestRequestChange(latestRequest);
+    lastRequestedSignature = requestSignature;
+    const request = {
+      type: "translate.request",
+      requestId,
+      text: requestInput.text,
+      targetLanguage: requestInput.targetLanguage,
+      model: requestInput.model
+    };
+    socket.send(JSON.stringify(request));
+  };
+  const sendDefinitionsRequest = (requestInput) => {
+    const normalizedWord = normalizeDefinition(requestInput.word);
+    if (!normalizedWord || !socket || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const requestSignature = getDefinitionRequestSignature(normalizedWord, requestInput.targetLanguage, requestInput.model);
+    if (lastDefinitionRequestSignature === requestSignature) {
+      return;
+    }
+    requestCounter += 1;
+    const requestId = `${Date.now()}-${requestCounter}`;
+    latestDefinitionsRequestId = requestId;
+    lastDefinitionRequestSignature = requestSignature;
+    options.onDefinitionLoadingChange(true);
+    const request = {
+      type: "translate.definitions.request",
+      requestId,
+      word: normalizedWord,
+      targetLanguage: requestInput.targetLanguage,
+      model: requestInput.model
+    };
+    socket.send(JSON.stringify(request));
+  };
+  const connectSocket = () => {
+    clearReconnectTimeout();
+    const nextSocket = new WebSocket(getTranslateWsUrl());
+    console.log("Connecting to websocket at", getTranslateWsUrl());
+    socket = nextSocket;
+    options.onSocketOpenChange(false);
+    nextSocket.addEventListener("open", () => {
+      if (isDisposed || socket !== nextSocket) {
+        return;
+      }
+      options.onSocketOpenChange(true);
+      options.onErrorTextChange("");
+    });
+    nextSocket.addEventListener("message", (event) => {
+      if (isDisposed || socket !== nextSocket) {
+        return;
+      }
+      let message;
+      try {
+        message = JSON.parse(event.data);
+      } catch (error) {
+        options.onTranslatingChange(false);
+        options.onErrorTextChange("Invalid websocket response");
+        return;
+      }
+      if (message.type === "ready") {
+        return;
+      }
+      if (message.type === "translate.definitions.success") {
+        if (message.requestId !== latestDefinitionsRequestId) {
+          return;
+        }
+        options.onDefinitionsSuccess(message.definitions);
+        return;
+      }
+      if (message.type === "translate.error" && message.requestId && message.requestId === latestDefinitionsRequestId) {
+        options.onDefinitionsError();
+        return;
+      }
+      const isActiveCurrentRequest = !!latestRequest.id && !!latestRequest.normalizedInputText && !!currentNormalizedInputText && currentNormalizedInputText === latestRequest.normalizedInputText && (!message.requestId || message.requestId === latestRequest.id);
+      if (!isActiveCurrentRequest) {
+        return;
+      }
+      options.onTranslatingChange(false);
+      if (message.type === "translate.success") {
+        options.onTranslateSuccess(message.words);
+        options.onErrorTextChange("");
+        return;
+      }
+      if (message.type === "translate.error") {
+        options.onTranslateError(message.error || "Translation failed");
+      }
+    });
+    nextSocket.addEventListener("error", () => {
+      if (isDisposed || socket !== nextSocket) {
+        return;
+      }
+      options.onSocketOpenChange(false);
+    });
+    nextSocket.addEventListener("close", () => {
+      if (socket === nextSocket) {
+        socket = null;
+      }
+      if (isDisposed) {
+        return;
+      }
+      options.onSocketOpenChange(false);
+      options.onTranslatingChange(false);
+      options.onDefinitionLoadingChange(false);
+      clearAllRequestState();
+      reconnectTimeoutId = window.setTimeout(() => {
+        connectSocket();
+      }, 500);
+    });
+  };
+  const connect = () => {
+    isDisposed = false;
+    connectSocket();
+  };
+  const dispose = () => {
+    isDisposed = true;
+    clearReconnectTimeout();
+    const activeSocket = socket;
+    socket = null;
+    options.onSocketOpenChange(false);
+    if (activeSocket) {
+      activeSocket.close();
+    }
+  };
+  return {
+    connect,
+    dispose,
+    setCurrentNormalizedInputText: (normalizedInputText) => {
+      currentNormalizedInputText = normalizedInputText;
+    },
+    clearAllRequestState,
+    clearDefinitionRequestState,
+    sendTranslateRequest,
+    sendDefinitionsRequest
+  };
+};
+// src/utils/WebUtils.ts
+var isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+var isLocal = () => window.location.hostname === "localhost";
 // src/index.tsx
 var import_react3 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
@@ -17584,14 +17830,7 @@ var languageOptions = [
   { label: "Japanese", value: "Japanese" },
   { label: "Russian", value: "Russian" }
 ];
-var getTranslateWsUrl = () => {
-  const { hostname } = window.location;
-  return hostname === "localhost" ? "http://localhost:5001/api/ws" : "https://piggo-translate-production.up.railway.app/api/ws";
-};
-var normalizeText = (text) => text.replace(/\s+/g, " ").trim();
-var definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
-var normalizeDefinitionWord = (word) => word.replace(definitionWordStripPattern, "");
-var getUniqueDefinitionWords = (words) => Array.from(new Set(words.map((word) => normalizeDefinitionWord(word)).filter(Boolean)));
+var normalizeText2 = (text) => text.replace(/\s+/g, " ").trim();
 var isSpaceSeparatedLanguage = (language) => !language.toLowerCase().includes("chinese") && !language.toLowerCase().includes("japanese");
 var noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/;
 var noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/;
@@ -17628,14 +17867,6 @@ var isEditableElement = (element) => {
   }
   return element.isContentEditable;
 };
-var getRequestSignature = ({ text, targetLanguage, model }) => {
-  const normalizedText = normalizeText(text);
-  return `${model}::${normalizedText}::${targetLanguage}`;
-};
-var getDefinitionRequestSignature = (word, targetLanguage, model) => {
-  return `${model}::${targetLanguage}::${normalizeDefinitionWord(word)}`;
-};
-var definitionCacheMaxItems = 10;
 var App = () => {
   const [inputText, setInputText] = import_react3.useState("");
   const [outputWords, setOutputWords] = import_react3.useState([]);
@@ -17653,227 +17884,109 @@ var App = () => {
   const [selectedOutputWords, setSelectedOutputWords] = import_react3.useState([]);
   const [wordDefinitions, setWordDefinitions] = import_react3.useState([]);
   const [isDefinitionLoading, setIsDefinitionLoading] = import_react3.useState(false);
-  const socketRef = import_react3.useRef(null);
+  const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = import_react3.useState(false);
+  const clientRef = import_react3.useRef(null);
   const inputTextareaRef = import_react3.useRef(null);
   const pendingInputSelectionRef = import_react3.useRef(null);
-  const reconnectTimeoutIdRef = import_react3.useRef(null);
-  const requestCounterRef = import_react3.useRef(0);
-  const latestRequestRef = import_react3.useRef({
-    id: "",
-    normalizedInputText: ""
-  });
-  const currentNormalizedInputTextRef = import_react3.useRef("");
-  const lastRequestedSignatureRef = import_react3.useRef("");
-  const latestDefinitionsRequestIdRef = import_react3.useRef("");
-  const lastDefinitionRequestSignatureRef = import_react3.useRef("");
   const selectedOutputWordsRef = import_react3.useRef([]);
-  const definitionCacheRef = import_react3.useRef({});
-  const definitionCacheOrderRef = import_react3.useRef([]);
-  const normalizedInputText = normalizeText(inputText);
+  const targetLanguageRef = import_react3.useRef(targetLanguage);
+  const selectedModelRef = import_react3.useRef(selectedModel);
+  const CacheRef = import_react3.useRef(Cache());
+  const headerSectionRef = import_react3.useRef(null);
+  const paneStackRef = import_react3.useRef(null);
+  import_react3.useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setIsConnectionDotDelayComplete(true);
+    }, 1000);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+  import_react3.useEffect(() => {
+    const headerSection = headerSectionRef.current;
+    const paneStack = paneStackRef.current;
+    if (!headerSection || !paneStack) {
+      return;
+    }
+    const updatePaneStackMarginTop = () => {
+      const minimumGapFromHeader = 16;
+      const headerBottom = headerSection.getBoundingClientRect().bottom;
+      const paneStackHeight = paneStack.getBoundingClientRect().height;
+      const centeredTop = Math.max((window.innerHeight - paneStackHeight) / 2, 0);
+      const targetTop = Math.max(centeredTop, headerBottom + minimumGapFromHeader);
+      const marginTop = Math.max(targetTop - headerBottom - 40, 0);
+      paneStack.style.marginTop = `${marginTop}px`;
+    };
+    const resizeObserver = new ResizeObserver(() => {
+      updatePaneStackMarginTop();
+    });
+    resizeObserver.observe(headerSection);
+    resizeObserver.observe(paneStack);
+    window.addEventListener("resize", updatePaneStackMarginTop);
+    updatePaneStackMarginTop();
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updatePaneStackMarginTop);
+    };
+  }, []);
+  const normalizedInputText = normalizeText2(inputText);
   const hasInputText = !!normalizedInputText;
   const hasOutputWords = outputWords.length > 0;
   const isSpinnerVisible = isTranslating && !!latestRequestSnapshot.id && normalizedInputText === latestRequestSnapshot.normalizedInputText;
-  const sendTranslateRequest = (requestInput) => {
-    const socket = socketRef.current;
-    if (!requestInput.text || !socket || socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    requestCounterRef.current += 1;
-    const requestId = `${Date.now()}-${requestCounterRef.current}`;
-    setErrorText("");
-    setIsTranslating(true);
-    latestRequestRef.current = {
-      id: requestId,
-      normalizedInputText: normalizeText(requestInput.text)
-    };
-    setLatestRequestSnapshot(latestRequestRef.current);
-    lastRequestedSignatureRef.current = getRequestSignature(requestInput);
-    const request = {
-      type: "translate.request",
-      requestId,
-      text: requestInput.text,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
-    };
-    socket.send(JSON.stringify(request));
-  };
-  const sendDefinitionsRequest = (word) => {
-    const socket = socketRef.current;
-    const normalizedWord = normalizeDefinitionWord(word);
-    if (!normalizedWord || !socket || socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    const requestSignature = getDefinitionRequestSignature(normalizedWord, targetLanguage, selectedModel);
-    if (lastDefinitionRequestSignatureRef.current === requestSignature) {
-      return;
-    }
-    requestCounterRef.current += 1;
-    const requestId = `${Date.now()}-${requestCounterRef.current}`;
-    latestDefinitionsRequestIdRef.current = requestId;
-    lastDefinitionRequestSignatureRef.current = requestSignature;
-    setIsDefinitionLoading(true);
-    const request = {
-      type: "translate.definitions.request",
-      requestId,
-      word: normalizedWord,
-      targetLanguage,
-      model: selectedModel
-    };
-    socket.send(JSON.stringify(request));
-  };
-  const getCachedDefinitions = (words) => {
-    const uniqueWords = getUniqueDefinitionWords(words);
-    return uniqueWords.map((word) => ({
-      word,
-      definition: definitionCacheRef.current[word] || ""
-    })).filter((entry) => !!entry.definition);
-  };
-  const getMissingDefinitionWords = (words) => {
-    const uniqueWords = getUniqueDefinitionWords(words);
-    const cachedWordSet = new Set(getCachedDefinitions(uniqueWords).map((entry) => entry.word));
-    return uniqueWords.filter((word) => !cachedWordSet.has(word));
-  };
-  const writeDefinitionsToCache = (definitions) => {
-    definitions.forEach(({ word, definition }) => {
-      const normalizedWord = normalizeDefinitionWord(word);
-      if (!normalizedWord || !definition) {
-        return;
-      }
-      definitionCacheRef.current[normalizedWord] = definition;
-      definitionCacheOrderRef.current = definitionCacheOrderRef.current.filter((cachedWord) => cachedWord !== normalizedWord);
-      definitionCacheOrderRef.current.push(normalizedWord);
-      while (definitionCacheOrderRef.current.length > definitionCacheMaxItems) {
-        const oldestWord = definitionCacheOrderRef.current.shift();
-        if (!oldestWord) {
-          return;
+  import_react3.useEffect(() => {
+    const client = Client({
+      onSocketOpenChange: setIsSocketOpen,
+      onErrorTextChange: setErrorText,
+      onTranslatingChange: setIsTranslating,
+      onDefinitionLoadingChange: setIsDefinitionLoading,
+      onLatestRequestChange: setLatestRequestSnapshot,
+      onTranslateSuccess: (words) => {
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
         }
-        delete definitionCacheRef.current[oldestWord];
+        setOutputWords(words);
+        setSelectedOutputWords([]);
+        setWordDefinitions([]);
+        setIsDefinitionLoading(false);
+        client.clearDefinitionRequestState();
+      },
+      onTranslateError: (error) => {
+        setErrorText(error);
+      },
+      onDefinitionsSuccess: (definitions) => {
+        CacheRef.current.writeDefinitionsToCache(definitions);
+        const selectedWords = selectedOutputWordsRef.current;
+        setWordDefinitions(CacheRef.current.getCachedDefinitions(selectedWords));
+        const missingWords = CacheRef.current.getMissingDefinitionWords(selectedWords);
+        if (missingWords.length) {
+          client.sendDefinitionsRequest({
+            word: missingWords[0],
+            targetLanguage: targetLanguageRef.current,
+            model: selectedModelRef.current
+          });
+        } else {
+          setIsDefinitionLoading(false);
+        }
+      },
+      onDefinitionsError: () => {
+        setWordDefinitions([]);
+        setIsDefinitionLoading(false);
       }
     });
-  };
-  import_react3.useEffect(() => {
-    let isDisposed = false;
-    const clearReconnectTimeout = () => {
-      if (reconnectTimeoutIdRef.current === null) {
-        return;
-      }
-      window.clearTimeout(reconnectTimeoutIdRef.current);
-      reconnectTimeoutIdRef.current = null;
-    };
-    const connectSocket = () => {
-      clearReconnectTimeout();
-      const socket = new WebSocket(getTranslateWsUrl());
-      console.log("Connecting to websocket at", getTranslateWsUrl());
-      socketRef.current = socket;
-      setIsSocketOpen(false);
-      socket.addEventListener("open", () => {
-        if (isDisposed || socketRef.current !== socket) {
-          return;
-        }
-        setIsSocketOpen(true);
-        setErrorText("");
-      });
-      socket.addEventListener("message", (event) => {
-        if (isDisposed || socketRef.current !== socket) {
-          return;
-        }
-        let message;
-        try {
-          message = JSON.parse(event.data);
-        } catch (error) {
-          setIsTranslating(false);
-          setErrorText("Invalid websocket response");
-          return;
-        }
-        if (message.type === "ready") {
-          return;
-        }
-        if (message.type === "translate.definitions.success") {
-          if (message.requestId !== latestDefinitionsRequestIdRef.current) {
-            return;
-          }
-          writeDefinitionsToCache(message.definitions);
-          const selectedWords = selectedOutputWordsRef.current;
-          setWordDefinitions(getCachedDefinitions(selectedWords));
-          const missingWords = getMissingDefinitionWords(selectedWords);
-          if (missingWords.length) {
-            sendDefinitionsRequest(missingWords[0]);
-          } else {
-            setIsDefinitionLoading(false);
-          }
-          return;
-        }
-        if (message.type === "translate.error" && message.requestId && message.requestId === latestDefinitionsRequestIdRef.current) {
-          setWordDefinitions([]);
-          setIsDefinitionLoading(false);
-          return;
-        }
-        const latestRequestId = latestRequestRef.current.id;
-        const latestRequestInput = latestRequestRef.current.normalizedInputText;
-        const currentInput = currentNormalizedInputTextRef.current;
-        const isActiveCurrentRequest = !!latestRequestId && !!latestRequestInput && !!currentInput && currentInput === latestRequestInput && (!message.requestId || message.requestId === latestRequestId);
-        if (!isActiveCurrentRequest) {
-          return;
-        }
-        setIsTranslating(false);
-        if (message.type === "translate.success") {
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-          }
-          console.log("got translation", message.words);
-          setOutputWords(message.words);
-          setSelectedOutputWords([]);
-          setWordDefinitions([]);
-          setIsDefinitionLoading(false);
-          latestDefinitionsRequestIdRef.current = "";
-          lastDefinitionRequestSignatureRef.current = "";
-          setErrorText("");
-          return;
-        }
-        setErrorText(message.error || "Translation failed");
-      });
-      socket.addEventListener("error", () => {
-        if (isDisposed || socketRef.current !== socket) {
-          return;
-        }
-        setIsSocketOpen(false);
-      });
-      socket.addEventListener("close", () => {
-        if (socketRef.current === socket) {
-          socketRef.current = null;
-        }
-        if (isDisposed) {
-          return;
-        }
-        setIsSocketOpen(false);
-        setIsTranslating(false);
-        setIsDefinitionLoading(false);
-        latestRequestRef.current = { id: "", normalizedInputText: "" };
-        setLatestRequestSnapshot(latestRequestRef.current);
-        currentNormalizedInputTextRef.current = "";
-        lastRequestedSignatureRef.current = "";
-        latestDefinitionsRequestIdRef.current = "";
-        lastDefinitionRequestSignatureRef.current = "";
-        reconnectTimeoutIdRef.current = window.setTimeout(() => {
-          connectSocket();
-        }, 500);
-      });
-    };
-    connectSocket();
+    clientRef.current = client;
+    client.connect();
     return () => {
-      isDisposed = true;
-      clearReconnectTimeout();
-      const socket = socketRef.current;
-      socketRef.current = null;
-      setIsSocketOpen(false);
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-      } else if (socket) {
-        socket.close();
-      }
+      client.dispose();
+      clientRef.current = null;
     };
   }, []);
+  import_react3.useEffect(() => {
+    targetLanguageRef.current = targetLanguage;
+  }, [targetLanguage]);
+  import_react3.useEffect(() => {
+    selectedModelRef.current = selectedModel;
+  }, [selectedModel]);
   import_react3.useEffect(() => {
     selectedOutputWordsRef.current = selectedOutputWords;
   }, [selectedOutputWords]);
@@ -17921,7 +18034,7 @@ var App = () => {
   }, []);
   import_react3.useEffect(() => {
     const trimmedText = inputText.trim();
-    currentNormalizedInputTextRef.current = normalizedInputText;
+    clientRef.current?.setCurrentNormalizedInputText(normalizedInputText);
     if (!trimmedText) {
       setOutputWords([]);
       setSelectedOutputWords([]);
@@ -17929,11 +18042,7 @@ var App = () => {
       setIsDefinitionLoading(false);
       setErrorText("");
       setDebouncedRequest(null);
-      latestRequestRef.current = { id: "", normalizedInputText: "" };
-      setLatestRequestSnapshot(latestRequestRef.current);
-      lastRequestedSignatureRef.current = "";
-      latestDefinitionsRequestIdRef.current = "";
-      lastDefinitionRequestSignatureRef.current = "";
+      clientRef.current?.clearAllRequestState();
       return;
     }
     const timeoutId = window.setTimeout(() => {
@@ -17956,11 +18065,7 @@ var App = () => {
       setIsDefinitionLoading(false);
       setErrorText("");
       setDebouncedRequest(null);
-      latestRequestRef.current = { id: "", normalizedInputText: "" };
-      setLatestRequestSnapshot(latestRequestRef.current);
-      lastRequestedSignatureRef.current = "";
-      latestDefinitionsRequestIdRef.current = "";
-      lastDefinitionRequestSignatureRef.current = "";
+      clientRef.current?.clearAllRequestState();
       return;
     }
     setDebouncedRequest({
@@ -17973,44 +18078,42 @@ var App = () => {
     if (!debouncedRequest || !isSocketOpen) {
       return;
     }
-    const nextSignature = getRequestSignature(debouncedRequest);
-    if (lastRequestedSignatureRef.current === nextSignature) {
-      return;
-    }
-    sendTranslateRequest(debouncedRequest);
+    clientRef.current?.sendTranslateRequest(debouncedRequest);
   }, [debouncedRequest, isSocketOpen]);
   import_react3.useEffect(() => {
     if (!selectedOutputWords.length) {
       setWordDefinitions([]);
       setIsDefinitionLoading(false);
-      latestDefinitionsRequestIdRef.current = "";
-      lastDefinitionRequestSignatureRef.current = "";
+      clientRef.current?.clearDefinitionRequestState();
       return;
     }
     const uniqueWords = Array.from(new Set(selectedOutputWords));
-    const cachedDefinitions = getCachedDefinitions(uniqueWords);
+    const cachedDefinitions = CacheRef.current.getCachedDefinitions(uniqueWords);
     setWordDefinitions(cachedDefinitions);
-    const missingWords = getMissingDefinitionWords(uniqueWords);
+    const missingWords = CacheRef.current.getMissingDefinitionWords(uniqueWords);
     if (!missingWords.length) {
       setIsDefinitionLoading(false);
-      latestDefinitionsRequestIdRef.current = "";
-      lastDefinitionRequestSignatureRef.current = "";
+      clientRef.current?.clearDefinitionRequestState();
       return;
     }
     if (!isSocketOpen) {
       return;
     }
     const timeoutId = window.setTimeout(() => {
-      sendDefinitionsRequest(missingWords[0]);
+      clientRef.current?.sendDefinitionsRequest({
+        word: missingWords[0],
+        targetLanguage,
+        model: selectedModel
+      });
     }, 200);
     return () => {
       window.clearTimeout(timeoutId);
     };
   }, [selectedOutputWords, isSocketOpen, selectedModel, targetLanguage]);
-  const definitionByWord = new Map(wordDefinitions.map((entry) => [normalizeDefinitionWord(entry.word), entry.definition]));
+  const definitionByWord = new Map(wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition]));
   const transliterationByWord = new Map;
   outputWords.filter(({ punctuation }) => !punctuation).forEach(({ word, literal }) => {
-    const normalizedWord = normalizeDefinitionWord(word);
+    const normalizedWord = normalizeDefinition(word);
     const transliterationKey = normalizedWord || word;
     if (transliterationByWord.has(transliterationKey)) {
       return;
@@ -18021,20 +18124,35 @@ var App = () => {
   });
   return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("main", {
     children: [
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("img", {
-        src: "piggo.svg",
-        alt: "",
-        "aria-hidden": "true",
-        className: "title-icon fade-in"
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("h1", {
-        children: "Piggo Translate"
-      }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("section", {
+        ref: headerSectionRef,
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginBottom: "1rem",
+          flexDirection: "column",
+          left: "50%"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("img", {
+            src: "piggo.svg",
+            alt: "",
+            "aria-hidden": "true",
+            className: "title-icon fade-in"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            className: "header-title",
+            children: "Piggo Translate"
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("section", {
+        ref: paneStackRef,
         className: "pane-stack",
         "aria-label": "Translator workspace",
         children: [
-          !isSocketOpen ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+          !isSocketOpen && isConnectionDotDelayComplete ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
             className: "pane-stack-connection-dot fade-in",
             "aria-hidden": "true"
           }, undefined, false, undefined, this) : null,
@@ -18082,7 +18200,7 @@ var App = () => {
             }
           }, undefined, false, undefined, this) : null,
           selectedOutputWords.map((word, index) => {
-            const normalizedWord = normalizeDefinitionWord(word);
+            const normalizedWord = normalizeDefinition(word);
             const definition = definitionByWord.get(normalizedWord) || "";
             const transliteration = transliterationByWord.get(normalizedWord || word) || "";
             const wordWithTransliteration = transliteration ? `${word} (${transliteration})` : word;
@@ -18101,10 +18219,10 @@ var App = () => {
           })
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+      isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.1.4"
+        children: "v0.1.5"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);

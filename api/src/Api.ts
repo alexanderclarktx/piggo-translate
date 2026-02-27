@@ -1,6 +1,4 @@
-import {
-  TranslateModel
-} from "@template/core"
+import { Model } from "@template/core"
 import { httpJson, httpText, OpenAiTranslator } from "@template/api"
 
 const logServerError = (context: string, error: unknown) => {
@@ -23,7 +21,7 @@ const normalizeTranslateInput = (
   const normalizedText = typeof text === "string" ? text.trim() : ""
   const normalizedTargetLanguage =
     typeof targetLanguage === "string" ? targetLanguage.trim() : ""
-  const normalizedModel: TranslateModel =
+  const normalizedModel: Model =
     model === "anthropic" ? "anthropic" : "openai"
 
   return {
@@ -40,13 +38,13 @@ const parseTranslateWsMessage = (
   requestId: string
   text: string
   targetLanguage: string
-  model: TranslateModel
+  model: Model
 } | {
   type: "translate.definitions.request"
   requestId: string
   word: string
   targetLanguage: string
-  model: TranslateModel
+  model: Model
 }) => {
   if (!rawMessage || typeof rawMessage !== "object") {
     return {
@@ -143,13 +141,13 @@ export const createApiServer = () => {
   // const anthropicTranslator = AnthropicTranslator()
   const openAiTranslator = OpenAiTranslator()
 
-  const translateWithModel = async (model: TranslateModel, text: string, targetLanguage: string) => {
+  const translateWithModel = async (model: Model, text: string, targetLanguage: string) => {
     const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
 
     return translator.translate(text, targetLanguage)
   }
 
-  const getDefinitionsWithModel = async (model: TranslateModel, word: string, targetLanguage: string) => {
+  const getDefinitionsWithModel = async (model: Model, word: string, targetLanguage: string) => {
     const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
 
     return translator.getDefinitions(word, targetLanguage)
