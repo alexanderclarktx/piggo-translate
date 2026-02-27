@@ -1,6 +1,7 @@
 import {
   TranslateModel,
   TranslateWordDefinition,
+  TranslateWordToken,
   TranslateWsDefinitionsRequestMessage,
   TranslateWsRequestMessage,
   TranslateWsServerMessage
@@ -33,9 +34,35 @@ const getUniqueDefinitionWords = (words: string[]) =>
 const isSpaceSeparatedLanguage = (language: string) =>
   !language.toLowerCase().includes("chinese") &&
   !language.toLowerCase().includes("japanese")
-const joinOutputWords = (words: string[], targetLanguage: string) =>
-  words.join(isSpaceSeparatedLanguage(targetLanguage) ? " " : "")
-const joinTransliterationWords = (words: string[]) => words.join(" ")
+const noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/
+const noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/
+
+const joinOutputTokens = (tokens: TranslateWordToken[], targetLanguage: string, tokenKey: "word" | "literal") => {
+  const useSpaces = isSpaceSeparatedLanguage(targetLanguage)
+
+  return tokens.reduce((result, token, tokenIndex) => {
+    const tokenValue = token[tokenKey]
+
+    if (!tokenValue) {
+      return result
+    }
+
+    if (!result) {
+      return tokenValue
+    }
+
+    if (!useSpaces) {
+      return `${result}${tokenValue}`
+    }
+
+    const previousToken = tokens[tokenIndex - 1]
+    const previousWord = previousToken?.word || ""
+    const hasNoSpaceBefore = token.punctuation && noSpaceBeforePunctuationPattern.test(token.word)
+    const hasNoSpaceAfterPrevious = !!previousToken?.punctuation && noSpaceAfterPunctuationPattern.test(previousWord)
+    const joiner = hasNoSpaceBefore || hasNoSpaceAfterPrevious ? "" : " "
+    return `${result}${joiner}${tokenValue}`
+  }, "")
+}
 
 const isEditableElement = (element: Element | null) => {
   if (!(element instanceof HTMLElement)) {
@@ -70,8 +97,7 @@ const definitionCacheMaxItems = 10
 
 const App = () => {
   const [inputText, setInputText] = useState("")
-  const [outputWords, setOutputWords] = useState<string[]>([])
-  const [outputTransliteration, setOutputTransliteration] = useState<string[]>([])
+  const [outputWords, setOutputWords] = useState<TranslateWordToken[]>([])
   const [isTransliterationVisible, setIsTransliterationVisible] = useState(true)
   const [errorText, setErrorText] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
@@ -324,10 +350,9 @@ const App = () => {
             selection.removeAllRanges()
           }
 
-          console.log("got translation", message.words, message.transliteration)
+          console.log("got translation", message.words)
 
           setOutputWords(message.words)
-          setOutputTransliteration(message.transliteration)
           setSelectedOutputWords([])
           setWordDefinitions([])
           setIsDefinitionLoading(false)
@@ -459,7 +484,6 @@ const App = () => {
 
     if (!trimmedText) {
       setOutputWords([])
-      setOutputTransliteration([])
       setSelectedOutputWords([])
       setWordDefinitions([])
       setIsDefinitionLoading(false)
@@ -492,7 +516,6 @@ const App = () => {
 
     if (!trimmedText) {
       setOutputWords([])
-      setOutputTransliteration([])
       setSelectedOutputWords([])
       setWordDefinitions([])
       setIsDefinitionLoading(false)
@@ -567,20 +590,20 @@ const App = () => {
   )
   const transliterationByWord = new Map<string, string>()
 
-  outputWords.forEach((word, index) => {
-    const normalizedWord = normalizeDefinitionWord(word)
-    const transliterationKey = normalizedWord || word
+  outputWords
+    .filter(({ punctuation }) => !punctuation)
+    .forEach(({ word, literal }) => {
+      const normalizedWord = normalizeDefinitionWord(word)
+      const transliterationKey = normalizedWord || word
 
-    if (transliterationByWord.has(transliterationKey)) {
-      return
-    }
+      if (transliterationByWord.has(transliterationKey)) {
+        return
+      }
 
-    const transliteration = outputTransliteration[index]
-
-    if (transliteration) {
-      transliterationByWord.set(transliterationKey, transliteration)
-    }
-  })
+      if (literal) {
+        transliterationByWord.set(transliterationKey, literal)
+      }
+    })
 
   return (
     <main>
@@ -627,13 +650,17 @@ const App = () => {
           className={hasInputText ? undefined : "pane-transparent"}
           placeholder=""
           ariaLabel="Translated text"
-          value={hasInputText ? joinOutputWords(outputWords, targetLanguage) : ""}
-          selectionWords={hasInputText ? outputWords : []}
+          value={hasInputText ? joinOutputTokens(outputWords, targetLanguage, "word") : ""}
+          selectionTokens={hasInputText ? outputWords.map((token) => ({
+            value: token.word,
+            selectionWord: token.word,
+            selectable: !token.punctuation
+          })) : []}
           selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
           autoFocus={false}
           footer={hasInputText ? (
             <Transliteration
-              value={joinTransliterationWords(outputTransliteration)}
+              value={joinOutputTokens(outputWords, targetLanguage, "literal")}
               isVisible={isTransliterationVisible}
               onToggle={() => setIsTransliterationVisible((value) => !value)}
             />

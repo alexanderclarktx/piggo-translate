@@ -1,5 +1,5 @@
 import { Translator } from "./Translator"
-import { TranslateWordDefinition } from "@template/core"
+import { TranslateWordDefinition, TranslateWordToken } from "@template/core"
 
 type OpenAiRealtimeServerEvent = {
   type?: string
@@ -25,13 +25,13 @@ type OpenAiRealtimeServerEvent = {
 }
 
 type TranslationStructuredOutput = {
-  words: string[]
-  transliteration: string[]
+  words: TranslateWordToken[]
 }
 
-type TranslationLiteralPair = {
+type TranslationWordToken = {
   word: string
   literal: string
+  punctuation: boolean
 }
 
 type DefinitionsStructuredOutput = {
@@ -261,16 +261,12 @@ const parseStructuredTranslation = (rawText: string) => {
     throw new Error("OpenAI structured response missing translation literal pairs")
   }
 
-  const words = literalPairs.map((item) => item.word)
-  const transliteration = literalPairs.map((item) => item.literal)
-
   return {
-    words,
-    transliteration
+    words: literalPairs
   } satisfies TranslationStructuredOutput
 }
 
-const normalizeTranslationLiteralPairs = (parsed: unknown): TranslationLiteralPair[] => {
+const normalizeTranslationLiteralPairs = (parsed: unknown): TranslationWordToken[] => {
   const arrayCandidate = Array.isArray(parsed)
     ? parsed
     : parsed &&
@@ -281,12 +277,13 @@ const normalizeTranslationLiteralPairs = (parsed: unknown): TranslationLiteralPa
       : []
 
   return arrayCandidate
-    .filter((value): value is { word?: unknown, literal?: unknown } => !!value && typeof value === "object")
+    .filter((value): value is { word?: unknown, literal?: unknown, punctuation?: unknown } => !!value && typeof value === "object")
     .map((value) => ({
       word: typeof value.word === "string" ? value.word.trim() : "",
-      literal: typeof value.literal === "string" ? value.literal.trim() : ""
+      literal: typeof value.literal === "string" ? value.literal.trim() : "",
+      punctuation: value.punctuation === true
     }))
-    .filter((value) => !!value.word && !!value.literal)
+    .filter((value) => !!value.word && (!!value.literal || value.punctuation))
 }
 
 const getResponseTextFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
@@ -303,10 +300,10 @@ const getResponseTextFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
 const buildTranslationPrompt = (text: string, targetLanguage: string) => {
   return (
     `Translate the following text to ${targetLanguage}: ${text}\n` +
-    "Return only a valid JSON array with the shape: [{\"word\":\"...\",\"literal\":\"...\"}]\n" +
+    "Return only a valid JSON array with the shape: [{\"word\":\"...\",\"literal\":\"...\", \"punctuation\":true|false}]\n" +
     "each \"literal\" is a transliteration in the source language. for chinese, you must use pinyin with tone marks.\n" +
     "For Chinese output, each word must be a complete Chinese word (can be multi-character).\n" +
-    "Attach punctuation to the nearest word.\n" +
+    // "Attach punctuation to the nearest word.\n" +
     "Do not include empty strings.\n" +
     "Do not include markdown, code fences, or explanations.\n\n"
   )

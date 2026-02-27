@@ -1,5 +1,11 @@
 type TranslateModel = "openai" | "anthropic"
 
+type TranslateWordToken = {
+  word: string
+  literal: string
+  punctuation: boolean
+}
+
 type TranslateWsRequestMessage = {
   type: "translate.request"
   requestId: string
@@ -28,8 +34,7 @@ type TranslateWsReadyMessage = {
 type TranslateWsSuccessMessage = {
   type: "translate.success"
   requestId: string
-  words: string[]
-  transliteration: string[]
+  words: TranslateWordToken[]
 }
 
 type TranslateWsDefinitionsSuccessMessage = {
@@ -56,6 +61,7 @@ type TranslateWsServerMessage =
 
 export type {
   TranslateModel,
+  TranslateWordToken,
   TranslateWordDefinition,
   TranslateWsClientMessage,
   TranslateWsDefinitionsRequestMessage,

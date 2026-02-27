@@ -58,11 +58,16 @@ type TextPaneProps = {
   textareaRef?: MutableRefObject<HTMLTextAreaElement | null>
   enableTokenSelection?: boolean
   selectionWords?: string[]
+  selectionTokens?: {
+    value: string
+    selectionWord?: string
+    selectable?: boolean
+  }[]
   selectionWordJoiner?: string
 }
 
 const TextPane = ({
-  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, onSelectionChange, showHeader, textareaRef, enableTokenSelection, selectionWords, selectionWordJoiner = " "
+  id, title, placeholder, ariaLabel, value, className, afterTextarea, footer, readOnly, autoFocus, onChange, onSelectionChange, showHeader, textareaRef, enableTokenSelection, selectionWords, selectionTokens, selectionWordJoiner = " "
 }: TextPaneProps) => {
   const localTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const textContentRef = useRef<HTMLDivElement | null>(null)
@@ -70,14 +75,33 @@ const TextPane = ({
   const [text, setText] = useState(value)
   const [desiredText, setDesiredText] = useState(value)
   const paneClassName = [showHeader ? "pane" : "pane pane-no-header", className].filter(Boolean).join(" ")
-  const shouldUseSelectionWords =
-    !!selectionWords &&
-    selectionWords.length > 0 &&
+  const normalizedSelectionTokens =
+    selectionTokens && selectionTokens.length
+      ? selectionTokens
+      : selectionWords && selectionWords.length
+        ? selectionWords.map((value) => {
+          const selectionWord = getSelectionWord(value)
+          return {
+            value,
+            selectionWord,
+            selectable: !!selectionWord
+          }
+        })
+        : []
+  const shouldUseSelectionTokens =
+    normalizedSelectionTokens.length > 0 &&
     text === desiredText
-  const selectableTokens = shouldUseSelectionWords
-    ? selectionWords
-    : text.match(selectableOutputTokenPattern) ?? []
-  const shouldUseWordJoiner = shouldUseSelectionWords && selectionWords.length > 1
+  const selectableTokens = shouldUseSelectionTokens
+    ? normalizedSelectionTokens
+    : (text.match(selectableOutputTokenPattern) ?? []).map((token) => {
+      const selectionWord = getSelectionWord(token)
+      return {
+        value: token,
+        selectionWord,
+        selectable: !!selectionWord
+      }
+    })
+  const shouldUseWordJoiner = shouldUseSelectionTokens && normalizedSelectionTokens.length > 1
   const shouldRenderSelectableOutput = !!enableTokenSelection
 
   useEffect(() => {
@@ -347,16 +371,17 @@ const TextPane = ({
           }}
         >
           {selectableTokens.map((token, tokenIndex) => {
-            const isWhitespaceToken = !token.trim()
-            const selectionWord = getSelectionWord(token)
-            const isSelectableToken = !!selectionWord
+            const tokenValue = token.value
+            const isWhitespaceToken = !tokenValue.trim()
+            const selectionWord = token.selectionWord ?? getSelectionWord(tokenValue)
+            const isSelectableToken = token.selectable ?? !!selectionWord
             const tokenClassName = isWhitespaceToken ? "pane-text-token pane-text-token-space" : "pane-text-token"
 
             return (
-              <span key={`${token}-${tokenIndex}`}>
+              <span key={`${tokenValue}-${tokenIndex}`}>
                 <span
                   className={tokenClassName}
-                  data-selection-word={selectionWord}
+                  data-selection-word={isSelectableToken ? selectionWord : ""}
                   onMouseDown={(event) => {
                     if (isWhitespaceToken || !isSelectableToken) {
                       return
@@ -366,7 +391,7 @@ const TextPane = ({
                     selectToken(event.currentTarget)
                   }}
                 >
-                  {token}
+                  {tokenValue}
                 </span>
                 {shouldUseWordJoiner && tokenIndex < selectableTokens.length - 1 ? selectionWordJoiner : null}
               </span>
