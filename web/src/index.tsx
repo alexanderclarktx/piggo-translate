@@ -126,6 +126,7 @@ const App = () => {
 
     const updatePaneStackMarginTop = () => {
       const minimumGapFromHeader = 16
+      const minimumGapFromViewportBottom = 16
       const headerBottom = headerSection.getBoundingClientRect().bottom
       const paneStackHeight = paneStack.getBoundingClientRect().height
       const centeredTop = Math.max((window.innerHeight - paneStackHeight) / 2, 0)
@@ -133,6 +134,9 @@ const App = () => {
       const marginTop = Math.max(targetTop - headerBottom - 40, 0)
 
       paneStack.style.marginTop = `${marginTop}px`
+      const paneStackTop = paneStack.getBoundingClientRect().top
+      const maxHeight = Math.max(window.innerHeight - paneStackTop - minimumGapFromViewportBottom, 0)
+      paneStack.style.maxHeight = `${maxHeight}px`
     }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -508,7 +512,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.1.6
+          v0.1.7
         </span>
       )}
     </main>

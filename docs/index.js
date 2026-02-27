@@ -17910,12 +17910,16 @@ var App = () => {
     }
     const updatePaneStackMarginTop = () => {
       const minimumGapFromHeader = 16;
+      const minimumGapFromViewportBottom = 16;
       const headerBottom = headerSection.getBoundingClientRect().bottom;
       const paneStackHeight = paneStack.getBoundingClientRect().height;
       const centeredTop = Math.max((window.innerHeight - paneStackHeight) / 2, 0);
       const targetTop = Math.max(centeredTop, headerBottom + minimumGapFromHeader);
       const marginTop = Math.max(targetTop - headerBottom - 40, 0);
       paneStack.style.marginTop = `${marginTop}px`;
+      const paneStackTop = paneStack.getBoundingClientRect().top;
+      const maxHeight = Math.max(window.innerHeight - paneStackTop - minimumGapFromViewportBottom, 0);
+      paneStack.style.maxHeight = `${maxHeight}px`;
     };
     const resizeObserver = new ResizeObserver(() => {
       updatePaneStackMarginTop();
@@ -18223,7 +18227,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.1.6"
+        children: "v0.1.7"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);

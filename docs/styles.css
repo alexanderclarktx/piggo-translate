@@ -16,6 +16,7 @@ body {
   padding-right: 1rem;
   user-select: none;
   cursor: default;
+  overflow: hidden;
 }
 
 #app {
@@ -279,6 +280,18 @@ main {
   left: 50%;
   margin-top: 0;
   z-index: 1;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+  pointer-events: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pane-stack::-webkit-scrollbar {
+  display: none;
 }
 
 .pane {
@@ -288,7 +301,7 @@ main {
   display: flex;
   flex-direction: column;
   max-width: 600px;
-  width: 100%;
+  width: 99%;
   cursor: initial;
   position: relative;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
