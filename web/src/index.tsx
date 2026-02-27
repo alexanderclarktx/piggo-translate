@@ -421,32 +421,28 @@ const App = () => {
           <span className="pane-stack-connection-dot fade-in" aria-hidden="true" />
         ) : null}
 
-        {/* <section className="input-pane-block fade-in" aria-label="Input language pane"> */}
-        {/* <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-end" }}> */}
-          <TargetLanguageDropdown
-            options={languageOptions}
-            targetLanguage={targetLanguage}
-            onSelect={setTargetLanguage}
-          />
+        <TargetLanguageDropdown
+          options={languageOptions}
+          targetLanguage={targetLanguage}
+          onSelect={setTargetLanguage}
+        />
 
-          <TextPane
-            id="input-pane-title"
-            title="Input"
-            showHeader={false}
-            placeholder=""
-            ariaLabel="Text to translate"
-            value={inputText}
-            autoFocus
-            textareaRef={inputTextareaRef}
-            onChange={setInputText}
-            afterTextarea={hasInputText && isSpinnerVisible ? (
-              <span className="spinner pane-spinner" aria-hidden="true" />
-            ) : null}
-            readOnly={false}
-            className="fade-in"
-          />
-        {/* </div> */}
-        {/* </section> */}
+        <TextPane
+          id="input-pane-title"
+          title="Input"
+          showHeader={false}
+          placeholder=""
+          ariaLabel="Text to translate"
+          value={inputText}
+          autoFocus
+          textareaRef={inputTextareaRef}
+          onChange={setInputText}
+          afterTextarea={hasInputText && isSpinnerVisible ? (
+            <span className="spinner pane-spinner" aria-hidden="true" />
+          ) : null}
+          readOnly={false}
+          className="fade-in"
+        />
 
         {hasOutputWords ? (
           <TextPane

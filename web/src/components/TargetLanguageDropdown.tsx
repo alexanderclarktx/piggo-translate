@@ -2,13 +2,13 @@ import { isMobile } from "@template/web"
 import { LanguageOption } from ".."
 import { useState } from "react"
 
-type TargetLanguageDropdownProps = {
+type Props = {
   options: LanguageOption[]
   targetLanguage: string
   onSelect: (language: string) => void
 }
 
-const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: TargetLanguageDropdownProps) => {
+export const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: Props) => {
   const selectedLanguageLabel = options.find((option) => option.value === targetLanguage)?.label || targetLanguage
   const unselectedOptions = options.filter((option) => option.value !== targetLanguage)
 
@@ -60,5 +60,3 @@ const TargetLanguageDropdown = ({ options, targetLanguage, onSelect }: TargetLan
     </section>
   )
 }
-
-export { TargetLanguageDropdown }
