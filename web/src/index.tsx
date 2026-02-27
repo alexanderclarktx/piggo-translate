@@ -362,10 +362,21 @@ const App = () => {
 
   return (
     <main>
-      <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" />
-      <h1>
-        Piggo Translate
-      </h1>
+      <section style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+        marginBottom: "1rem",
+        flexDirection: "column",
+        position: "fixed",
+        left: "50%",
+        transform: "translate(-50%)"
+      }}>
+        <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" />
+        <h1>
+          Piggo Translate
+        </h1>
+      </section>
 
       {/* <TranslateToolbar
         errorText={errorText}
