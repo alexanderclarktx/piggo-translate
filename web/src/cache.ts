@@ -1,0 +1,74 @@
+import { WordDefinition } from "@template/core"
+
+const definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
+
+export const normalizeDefinitionWord = (word: string) => word.replace(definitionWordStripPattern, "")
+
+const getUniqueDefinitionWords = (words: string[]) =>
+  Array.from(new Set(words.map((word) => normalizeDefinitionWord(word)).filter(Boolean)))
+
+export type DefinitionCache = {
+  getCachedDefinitions: (words: string[]) => WordDefinition[]
+  getMissingDefinitionWords: (words: string[]) => string[]
+  writeDefinitionsToCache: (definitions: WordDefinition[]) => void
+  clear: () => void
+}
+
+export const DefinitionCache = (maxItems = 10): DefinitionCache => {
+  const cache: Record<string, string> = {}
+  let cacheOrder: string[] = []
+
+  const getCachedDefinitions = (words: string[]) => {
+    const uniqueWords = getUniqueDefinitionWords(words)
+    return uniqueWords
+      .map((word) => ({
+        word,
+        definition: cache[word] || ""
+      }))
+      .filter((entry) => !!entry.definition)
+  }
+
+  const getMissingDefinitionWords = (words: string[]) => {
+    const uniqueWords = getUniqueDefinitionWords(words)
+    const cachedWordSet = new Set(getCachedDefinitions(uniqueWords).map((entry) => entry.word))
+    return uniqueWords.filter((word) => !cachedWordSet.has(word))
+  }
+
+  const writeDefinitionsToCache = (definitions: WordDefinition[]) => {
+    definitions.forEach(({ word, definition }) => {
+      const normalizedWord = normalizeDefinitionWord(word)
+
+      if (!normalizedWord || !definition) {
+        return
+      }
+
+      cache[normalizedWord] = definition
+      cacheOrder = cacheOrder.filter((cachedWord) => cachedWord !== normalizedWord)
+      cacheOrder.push(normalizedWord)
+
+      while (cacheOrder.length > maxItems) {
+        const oldestWord = cacheOrder.shift()
+
+        if (!oldestWord) {
+          return
+        }
+
+        delete cache[oldestWord]
+      }
+    })
+  }
+
+  const clear = () => {
+    cacheOrder = []
+    Object.keys(cache).forEach((word) => {
+      delete cache[word]
+    })
+  }
+
+  return {
+    getCachedDefinitions,
+    getMissingDefinitionWords,
+    writeDefinitionsToCache,
+    clear
+  }
+}

@@ -1,7 +1,5 @@
-import {
-  Model, WordDefinition, WordToken, WsDefinitionsRequest, WsRequest, WsServerMessage
-} from "@template/core"
-import { LanguageOption, TextPane, Transliteration, TranslateToolbar } from "@template/web"
+import { Model, WordDefinition, WordToken, WsDefinitionsRequest, WsRequest, WsServerMessage } from "@template/core"
+import { LanguageOption, TextPane, Transliteration, DefinitionCache, normalizeDefinitionWord } from "@template/web"
 import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 
@@ -22,10 +20,6 @@ const getTranslateWsUrl = () => {
 }
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
-const definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
-const normalizeDefinitionWord = (word: string) => word.replace(definitionWordStripPattern, "")
-const getUniqueDefinitionWords = (words: string[]) =>
-  Array.from(new Set(words.map((word) => normalizeDefinitionWord(word)).filter(Boolean)))
 const isSpaceSeparatedLanguage = (language: string) =>
   !language.toLowerCase().includes("chinese") &&
   !language.toLowerCase().includes("japanese")
@@ -95,8 +89,6 @@ const getDefinitionRequestSignature = (
   return `${model}::${targetLanguage}::${normalizeDefinitionWord(word)}`
 }
 
-const definitionCacheMaxItems = 10
-
 const App = () => {
   const [inputText, setInputText] = useState("")
   const [outputWords, setOutputWords] = useState<WordToken[]>([])
@@ -133,7 +125,7 @@ const App = () => {
   const latestDefinitionsRequestIdRef = useRef("")
   const lastDefinitionRequestSignatureRef = useRef("")
   const selectedOutputWordsRef = useRef<string[]>([])
-  const definitionCacheRef = useRef<Record<string, string>>({})
+  const definitionCacheRef = useRef(DefinitionCache())
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -144,7 +136,6 @@ const App = () => {
       window.clearTimeout(timeoutId)
     }
   }, [])
-  const definitionCacheOrderRef = useRef<string[]>([])
   const normalizedInputText = normalizeText(inputText)
   const hasInputText = !!normalizedInputText
   const hasOutputWords = outputWords.length > 0
@@ -226,46 +217,6 @@ const App = () => {
     socket.send(JSON.stringify(request))
   }
 
-  const getCachedDefinitions = (words: string[]) => {
-    const uniqueWords = getUniqueDefinitionWords(words)
-    return uniqueWords
-      .map((word) => ({
-        word,
-        definition: definitionCacheRef.current[word] || ""
-      }))
-      .filter((entry) => !!entry.definition)
-  }
-
-  const getMissingDefinitionWords = (words: string[]) => {
-    const uniqueWords = getUniqueDefinitionWords(words)
-    const cachedWordSet = new Set(getCachedDefinitions(uniqueWords).map((entry) => entry.word))
-    return uniqueWords.filter((word) => !cachedWordSet.has(word))
-  }
-
-  const writeDefinitionsToCache = (definitions: WordDefinition[]) => {
-    definitions.forEach(({ word, definition }) => {
-      const normalizedWord = normalizeDefinitionWord(word)
-
-      if (!normalizedWord || !definition) {
-        return
-      }
-
-      definitionCacheRef.current[normalizedWord] = definition
-      definitionCacheOrderRef.current = definitionCacheOrderRef.current.filter((cachedWord) => cachedWord !== normalizedWord)
-      definitionCacheOrderRef.current.push(normalizedWord)
-
-      while (definitionCacheOrderRef.current.length > definitionCacheMaxItems) {
-        const oldestWord = definitionCacheOrderRef.current.shift()
-
-        if (!oldestWord) {
-          return
-        }
-
-        delete definitionCacheRef.current[oldestWord]
-      }
-    })
-  }
-
   useEffect(() => {
     let isDisposed = false
 
@@ -319,10 +270,10 @@ const App = () => {
             return
           }
 
-          writeDefinitionsToCache(message.definitions)
+          definitionCacheRef.current.writeDefinitionsToCache(message.definitions)
           const selectedWords = selectedOutputWordsRef.current
-          setWordDefinitions(getCachedDefinitions(selectedWords))
-          const missingWords = getMissingDefinitionWords(selectedWords)
+          setWordDefinitions(definitionCacheRef.current.getCachedDefinitions(selectedWords))
+          const missingWords = definitionCacheRef.current.getMissingDefinitionWords(selectedWords)
 
           if (missingWords.length) {
             sendDefinitionsRequest(missingWords[0])
@@ -574,10 +525,10 @@ const App = () => {
     }
 
     const uniqueWords = Array.from(new Set(selectedOutputWords))
-    const cachedDefinitions = getCachedDefinitions(uniqueWords)
+    const cachedDefinitions = definitionCacheRef.current.getCachedDefinitions(uniqueWords)
     setWordDefinitions(cachedDefinitions)
 
-    const missingWords = getMissingDefinitionWords(uniqueWords)
+    const missingWords = definitionCacheRef.current.getMissingDefinitionWords(uniqueWords)
 
     if (!missingWords.length) {
       setIsDefinitionLoading(false)
@@ -621,7 +572,7 @@ const App = () => {
 
   return (
     <main>
-      <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" /> 
+      <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" />
       <h1>
         Piggo Translate
       </h1>
