@@ -1,8 +1,8 @@
-import { TranslateModel } from "@template/core"
+import { Model } from "@template/core"
 
 type ModelSwitchProps = {
-  selectedModel: TranslateModel
-  onModelToggle: (model: TranslateModel) => void
+  selectedModel: Model
+  onModelToggle: (model: Model) => void
   className?: string
 }
 

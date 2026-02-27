@@ -1,73 +1,73 @@
-type TranslateModel = "openai" | "anthropic"
+type Model = "openai" | "anthropic"
 
-type TranslateWordToken = {
+type WordToken = {
   word: string
   literal: string
   punctuation: boolean
 }
 
-type TranslateWsRequestMessage = {
+type WsRequest = {
   type: "translate.request"
   requestId: string
   text: string
   targetLanguage: string
-  model?: TranslateModel
+  model?: Model
 }
 
-type TranslateWordDefinition = {
+type WordDefinition = {
   word: string
   definition: string
 }
 
-type TranslateWsDefinitionsRequestMessage = {
+type WsDefinitionsRequest = {
   type: "translate.definitions.request"
   requestId: string
   word: string
   targetLanguage: string
-  model?: TranslateModel
+  model?: Model
 }
 
-type TranslateWsReadyMessage = {
+type WsReady = {
   type: "ready"
 }
 
-type TranslateWsSuccessMessage = {
+type WsSuccess = {
   type: "translate.success"
   requestId: string
-  words: TranslateWordToken[]
+  words: WordToken[]
 }
 
-type TranslateWsDefinitionsSuccessMessage = {
+type WsDefinitionsSuccess = {
   type: "translate.definitions.success"
   requestId: string
-  definitions: TranslateWordDefinition[]
+  definitions: WordDefinition[]
 }
 
-type TranslateWsErrorMessage = {
+type WsError = {
   type: "translate.error"
   requestId?: string
   error: string
 }
 
-type TranslateWsClientMessage =
-  | TranslateWsRequestMessage
-  | TranslateWsDefinitionsRequestMessage
+type WsClientMessage =
+  | WsRequest
+  | WsDefinitionsRequest
 
-type TranslateWsServerMessage =
-  | TranslateWsReadyMessage
-  | TranslateWsSuccessMessage
-  | TranslateWsDefinitionsSuccessMessage
-  | TranslateWsErrorMessage
+type WsServerMessage =
+  | WsReady
+  | WsSuccess
+  | WsDefinitionsSuccess
+  | WsError
 
 export type {
-  TranslateModel,
-  TranslateWordToken,
-  TranslateWordDefinition,
-  TranslateWsClientMessage,
-  TranslateWsDefinitionsRequestMessage,
-  TranslateWsDefinitionsSuccessMessage,
-  TranslateWsErrorMessage,
-  TranslateWsRequestMessage,
-  TranslateWsServerMessage,
-  TranslateWsSuccessMessage
+  Model,
+  WordToken,
+  WordDefinition,
+  WsClientMessage,
+  WsDefinitionsRequest,
+  WsDefinitionsSuccess,
+  WsError,
+  WsRequest,
+  WsServerMessage,
+  WsSuccess
 }

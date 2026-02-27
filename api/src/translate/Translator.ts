@@ -1,8 +1,8 @@
-import { TranslateWordDefinition, TranslateWordToken } from "@template/core"
+import { WordDefinition, WordToken } from "@template/core"
 
 export type Translator = {
   translate: (text: string, targetLanguage: string) => Promise<{
-    words: TranslateWordToken[]
+    words: WordToken[]
   }>
-  getDefinitions: (word: string, targetLanguage: string) => Promise<TranslateWordDefinition[]>
+  getDefinitions: (word: string, targetLanguage: string) => Promise<WordDefinition[]>
 }

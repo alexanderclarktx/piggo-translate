@@ -1,5 +1,5 @@
 import { Translator } from "./Translator"
-import { TranslateWordDefinition, TranslateWordToken } from "@template/core"
+import { WordDefinition, WordToken } from "@template/core"
 
 type OpenAiRealtimeServerEvent = {
   type?: string
@@ -25,7 +25,7 @@ type OpenAiRealtimeServerEvent = {
 }
 
 type TranslationStructuredOutput = {
-  words: TranslateWordToken[]
+  words: WordToken[]
 }
 
 type TranslationWordToken = {
@@ -35,7 +35,7 @@ type TranslationWordToken = {
 }
 
 type DefinitionsStructuredOutput = {
-  definitions: TranslateWordDefinition[]
+  definitions: WordDefinition[]
 }
 
 export const OpenAiTranslator = (): Translator => ({

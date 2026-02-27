@@ -1,10 +1,5 @@
 import {
-  TranslateModel,
-  TranslateWordDefinition,
-  TranslateWordToken,
-  TranslateWsDefinitionsRequestMessage,
-  TranslateWsRequestMessage,
-  TranslateWsServerMessage
+  Model, WordDefinition, WordToken, WsDefinitionsRequest, WsRequest, WsServerMessage
 } from "@template/core"
 import { LanguageOption, TextPane, Transliteration, TranslateToolbar } from "@template/web"
 import { useEffect, useRef, useState } from "react"
@@ -38,7 +33,7 @@ const noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？�
 const noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/
 
 const joinOutputTokens = (
-  tokens: TranslateWordToken[],
+  tokens: WordToken[],
   targetLanguage: string,
   tokenKey: "word" | "literal",
   options?: {
@@ -87,7 +82,7 @@ const isEditableElement = (element: Element | null) => {
   return element.isContentEditable
 }
 
-const getRequestSignature = ({ text, targetLanguage, model }: { text: string, targetLanguage: string, model: TranslateModel }) => {
+const getRequestSignature = ({ text, targetLanguage, model }: { text: string, targetLanguage: string, model: Model }) => {
   const normalizedText = normalizeText(text)
   return `${model}::${normalizedText}::${targetLanguage}`
 }
@@ -95,7 +90,7 @@ const getRequestSignature = ({ text, targetLanguage, model }: { text: string, ta
 const getDefinitionRequestSignature = (
   word: string,
   targetLanguage: string,
-  model: TranslateModel
+  model: Model
 ) => {
   return `${model}::${targetLanguage}::${normalizeDefinitionWord(word)}`
 }
@@ -104,7 +99,7 @@ const definitionCacheMaxItems = 10
 
 const App = () => {
   const [inputText, setInputText] = useState("")
-  const [outputWords, setOutputWords] = useState<TranslateWordToken[]>([])
+  const [outputWords, setOutputWords] = useState<WordToken[]>([])
   const [isTransliterationVisible, setIsTransliterationVisible] = useState(true)
   const [errorText, setErrorText] = useState("")
   const [isTranslating, setIsTranslating] = useState(false)
@@ -116,12 +111,12 @@ const App = () => {
   const [debouncedRequest, setDebouncedRequest] = useState<{
     text: string
     targetLanguage: string
-    model: TranslateModel
+    model: Model
   } | null>(null)
   const [targetLanguage, setTargetLanguage] = useState(languageOptions[1].value)
-  const [selectedModel, setSelectedModel] = useState<TranslateModel>("openai")
+  const [selectedModel, setSelectedModel] = useState<Model>("openai")
   const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
-  const [wordDefinitions, setWordDefinitions] = useState<TranslateWordDefinition[]>([])
+  const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
   const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
   const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = useState(false)
   const socketRef = useRef<WebSocket | null>(null)
@@ -161,7 +156,7 @@ const App = () => {
   const sendTranslateRequest = (requestInput: {
     text: string
     targetLanguage: string
-    model: TranslateModel
+    model: Model
   }) => {
     const socket = socketRef.current
 
@@ -185,7 +180,7 @@ const App = () => {
     setLatestRequestSnapshot(latestRequestRef.current)
     lastRequestedSignatureRef.current = getRequestSignature(requestInput)
 
-    const request: TranslateWsRequestMessage = {
+    const request: WsRequest = {
       type: "translate.request",
       requestId,
       text: requestInput.text,
@@ -218,7 +213,7 @@ const App = () => {
     lastDefinitionRequestSignatureRef.current = requestSignature
     setIsDefinitionLoading(true)
 
-    const request: TranslateWsDefinitionsRequestMessage = {
+    const request: WsDefinitionsRequest = {
       type: "translate.definitions.request",
       requestId,
       word: normalizedWord,
@@ -247,7 +242,7 @@ const App = () => {
     return uniqueWords.filter((word) => !cachedWordSet.has(word))
   }
 
-  const writeDefinitionsToCache = (definitions: TranslateWordDefinition[]) => {
+  const writeDefinitionsToCache = (definitions: WordDefinition[]) => {
     definitions.forEach(({ word, definition }) => {
       const normalizedWord = normalizeDefinitionWord(word)
 
@@ -305,10 +300,10 @@ const App = () => {
           return
         }
 
-        let message: TranslateWsServerMessage
+        let message: WsServerMessage
 
         try {
-          message = JSON.parse(event.data) as TranslateWsServerMessage
+          message = JSON.parse(event.data) as WsServerMessage
         } catch (error) {
           setIsTranslating(false)
           setErrorText("Invalid websocket response")
