@@ -407,7 +407,7 @@ const App = () => {
         flexDirection: "column",
         left: "50%"
       }}>
-        <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" />
+        <img src="piggo.svg" alt="" aria-hidden="true" className="title-icon fade-in" draggable={false} />
         <p className="header-title">Piggo Translate</p>
       </section>
 
@@ -508,7 +508,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.1.5
+          v0.1.6
         </span>
       )}
     </main>
