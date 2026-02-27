@@ -18,13 +18,6 @@ body {
   cursor: default;
 }
 
-select {
-  -webkit-appearance: none;
-  /* appearance: none;
-  background: none;
-  border-radius: 0; */
-}
-
 #app {
   background-color: #c9e4ff;
   border-radius: 12px;
@@ -276,22 +269,11 @@ main {
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  left: 50%;
   margin-top: 0;
   z-index: 1;
-
-  /* transform: translateY(-50%); */
-  /* margin-top: 10% */
-
-  /* pointer-events: auto; */
-
-  /* overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
-  min-height: 0;
-  pointer-events: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none; */
+  justify-self: center;
+  width: 100%;
+  max-width: 600px;
 }
 
 .input-pane-block {
@@ -304,7 +286,6 @@ main {
 
 .input-pane-language-menu {
   right: 5px;
-  /* width: max-content; */
   align-self: flex-end;
   display: flex;
   position: relative;
@@ -362,10 +343,8 @@ main {
   font-size: 1rem;
   color: white;
   letter-spacing: 0.02em;
-  /* padding: 0.2rem 0.65rem; */
   text-align: center;
   padding: 0;
-  /* padding-bottom: 0.25rem; */
   margin: 0;
 }
 

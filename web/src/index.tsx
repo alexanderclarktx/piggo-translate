@@ -417,6 +417,7 @@ const App = () => {
         ) : null}
 
         {/* <section className="input-pane-block fade-in" aria-label="Input language pane"> */}
+        {/* <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-end" }}> */}
           <TargetLanguageDropdown
             options={languageOptions}
             targetLanguage={targetLanguage}
@@ -438,6 +439,7 @@ const App = () => {
             ) : null}
             readOnly={false}
           />
+        {/* </div> */}
         {/* </section> */}
 
         {hasOutputWords ? (
