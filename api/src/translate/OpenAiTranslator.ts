@@ -1,4 +1,5 @@
 import { Translator } from "./Translator"
+import { TranslateWordDefinition } from "@template/core"
 
 type OpenAiRealtimeServerEvent = {
   type?: string
@@ -28,6 +29,10 @@ type TranslationStructuredOutput = {
   transliteration: string
 }
 
+type DefinitionsStructuredOutput = {
+  definitions: TranslateWordDefinition[]
+}
+
 export const OpenAiTranslator = (): Translator => ({
   translate: async (text, targetLanguage) => {
     const apiKey = process.env.OPENAI_API_KEY
@@ -36,171 +41,194 @@ export const OpenAiTranslator = (): Translator => ({
       throw new Error("Missing OPENAI_API_KEY")
     }
 
-    const model =
-      process.env.OPENAI_REALTIME_MODEL ||
-      process.env.OPENAI_MODEL ||
-      "gpt-realtime"
-    const timeoutMs = Number(process.env.OPENAI_REALTIME_TIMEOUT_MS || "30000")
-    const requestStartedAt = performance.now()
+    const rawText = await runOpenAiRealtimeRequest(
+      apiKey,
+      buildTranslationPrompt(text, targetLanguage),
+      "You are a translation engine. Translate accurately and preserve meaning, tone, and formatting where possible."
+    )
 
-    return await new Promise<TranslationStructuredOutput>((resolve, reject) => {
-      let isSettled = false
-      let streamedText = ""
-      let receivedDoneEvent = false
-      let ws: WebSocket
+    return parseStructuredTranslation(rawText)
+  },
+  getDefinitions: async (words, targetLanguage) => {
+    const apiKey = process.env.OPENAI_API_KEY
 
-      const settleError = (error: unknown) => {
-        if (isSettled) {
-          return
-        }
+    if (!apiKey) {
+      throw new Error("Missing OPENAI_API_KEY")
+    }
 
-        isSettled = true
-        clearTimeout(timeout)
-        reject(error instanceof Error ? error : new Error("OpenAI request failed"))
-      }
+    const rawText = await runOpenAiRealtimeRequest(
+      apiKey,
+      buildDefinitionPrompt(words, targetLanguage),
+      "You write concise dictionary-style definitions. Return valid JSON only."
+    )
 
-      const settleSuccess = (rawText: string) => {
-        if (isSettled) {
-          return
-        }
-
-        try {
-          const structuredTranslation = parseStructuredTranslation(rawText)
-          const responseDurationMs = performance.now() - requestStartedAt
-          console.log(
-            `[openai] response received in ${responseDurationMs.toFixed(0)}ms (model ${model})`
-          )
-
-          isSettled = true
-          clearTimeout(timeout)
-          resolve(structuredTranslation)
-        } catch (error) {
-          settleError(error)
-        }
-      }
-
-      const timeout = setTimeout(() => {
-        settleError(new Error(`OpenAI realtime request timed out after ${timeoutMs}ms`))
-        ws.close()
-      }, timeoutMs)
-
-      ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`, {
-        // @ts-expect-error
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "OpenAI-Beta": "realtime=v1"
-        }
-      })
-
-      ws.addEventListener("open", () => {
-        ws.send(
-          JSON.stringify({
-            type: "conversation.item.create",
-            item: {
-              type: "message",
-              role: "user",
-              content: [
-                {
-                  type: "input_text",
-                  text: buildTranslationPrompt(text, targetLanguage)
-                }
-              ]
-            }
-          })
-        )
-
-        ws.send(
-          JSON.stringify({
-            type: "response.create",
-            response: {
-              modalities: ["text"],
-              max_output_tokens: 1024,
-              instructions:
-                "You are a translation engine. Translate accurately and preserve meaning, tone, and formatting where possible."
-            }
-          })
-        )
-      })
-
-      ws.addEventListener("message", (event) => {
-        let parsedEvent: OpenAiRealtimeServerEvent
-
-        try {
-          if (typeof event.data !== "string") {
-            const messageText =
-              event.data instanceof Uint8Array
-                ? Buffer.from(event.data).toString("utf8")
-                : String(event.data)
-
-            parsedEvent = JSON.parse(messageText) as OpenAiRealtimeServerEvent
-          } else {
-            parsedEvent = JSON.parse(event.data) as OpenAiRealtimeServerEvent
-          }
-        } catch {
-          return
-        }
-
-        if (parsedEvent.type === "error") {
-          settleError(
-            new Error(parsedEvent.error?.message || "OpenAI realtime request failed")
-          )
-          ws.close()
-          return
-        }
-
-        if (
-          parsedEvent.type === "response.output_text.delta" &&
-          typeof parsedEvent.delta === "string"
-        ) {
-          streamedText += parsedEvent.delta
-          return
-        }
-
-        if (
-          parsedEvent.type === "response.output_text.done" &&
-          typeof parsedEvent.text === "string" &&
-          !streamedText.trim()
-        ) {
-          streamedText = parsedEvent.text
-          return
-        }
-
-        if (parsedEvent.type === "response.done") {
-          receivedDoneEvent = true
-
-          const failedStatus =
-            parsedEvent.response?.status &&
-            parsedEvent.response.status !== "completed"
-
-          if (failedStatus) {
-            settleError(
-              new Error(
-                parsedEvent.response?.status_details?.error?.message ||
-                `OpenAI response ended with status '${parsedEvent.response?.status}'`
-              )
-            )
-            ws.close()
-            return
-          }
-
-          const doneText = getResponseTextFromDoneEvent(parsedEvent)
-          settleSuccess(streamedText || doneText)
-          ws.close()
-        }
-      })
-
-      ws.addEventListener("error", () => {
-        settleError(new Error("OpenAI realtime websocket error"))
-      })
-
-      ws.addEventListener("close", () => {
-        if (!isSettled && !receivedDoneEvent) {
-          settleError(new Error("OpenAI realtime websocket closed before completion"))
-        }
-      })
-    })
+    return parseStructuredDefinitions(rawText, words).definitions
   }
 })
+
+const runOpenAiRealtimeRequest = async (
+  apiKey: string,
+  prompt: string,
+  instructions: string
+) => {
+  const model =
+    process.env.OPENAI_REALTIME_MODEL ||
+    process.env.OPENAI_MODEL ||
+    "gpt-realtime"
+  const timeoutMs = Number(process.env.OPENAI_REALTIME_TIMEOUT_MS || "30000")
+  const requestStartedAt = performance.now()
+
+  return await new Promise<string>((resolve, reject) => {
+    let isSettled = false
+    let streamedText = ""
+    let receivedDoneEvent = false
+    let ws: WebSocket
+
+    const settleError = (error: unknown) => {
+      if (isSettled) {
+        return
+      }
+
+      isSettled = true
+      clearTimeout(timeout)
+      reject(error instanceof Error ? error : new Error("OpenAI request failed"))
+    }
+
+    const settleSuccess = (rawText: string) => {
+      if (isSettled) {
+        return
+      }
+
+      const responseDurationMs = performance.now() - requestStartedAt
+      console.log(
+        `[openai] response received in ${responseDurationMs.toFixed(0)}ms (model ${model})`
+      )
+
+      isSettled = true
+      clearTimeout(timeout)
+      resolve(rawText)
+    }
+
+    const timeout = setTimeout(() => {
+      settleError(new Error(`OpenAI realtime request timed out after ${timeoutMs}ms`))
+      ws.close()
+    }, timeoutMs)
+
+    ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`, {
+      // @ts-expect-error
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "OpenAI-Beta": "realtime=v1"
+      }
+    })
+
+    ws.addEventListener("open", () => {
+      ws.send(
+        JSON.stringify({
+          type: "conversation.item.create",
+          item: {
+            type: "message",
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: prompt
+              }
+            ]
+          }
+        })
+      )
+
+      ws.send(
+        JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["text"],
+            max_output_tokens: 1024,
+            instructions
+          }
+        })
+      )
+    })
+
+    ws.addEventListener("message", (event) => {
+      let parsedEvent: OpenAiRealtimeServerEvent
+
+      try {
+        if (typeof event.data !== "string") {
+          const messageText =
+            event.data instanceof Uint8Array
+              ? Buffer.from(event.data).toString("utf8")
+              : String(event.data)
+
+          parsedEvent = JSON.parse(messageText) as OpenAiRealtimeServerEvent
+        } else {
+          parsedEvent = JSON.parse(event.data) as OpenAiRealtimeServerEvent
+        }
+      } catch {
+        return
+      }
+
+      if (parsedEvent.type === "error") {
+        settleError(
+          new Error(parsedEvent.error?.message || "OpenAI realtime request failed")
+        )
+        ws.close()
+        return
+      }
+
+      if (
+        parsedEvent.type === "response.output_text.delta" &&
+        typeof parsedEvent.delta === "string"
+      ) {
+        streamedText += parsedEvent.delta
+        return
+      }
+
+      if (
+        parsedEvent.type === "response.output_text.done" &&
+        typeof parsedEvent.text === "string" &&
+        !streamedText.trim()
+      ) {
+        streamedText = parsedEvent.text
+        return
+      }
+
+      if (parsedEvent.type === "response.done") {
+        receivedDoneEvent = true
+
+        const failedStatus =
+          parsedEvent.response?.status &&
+          parsedEvent.response.status !== "completed"
+
+        if (failedStatus) {
+          settleError(
+            new Error(
+              parsedEvent.response?.status_details?.error?.message ||
+              `OpenAI response ended with status '${parsedEvent.response?.status}'`
+            )
+          )
+          ws.close()
+          return
+        }
+
+        const doneText = getResponseTextFromDoneEvent(parsedEvent)
+        settleSuccess(streamedText || doneText)
+        ws.close()
+      }
+    })
+
+    ws.addEventListener("error", () => {
+      settleError(new Error("OpenAI realtime websocket error"))
+    })
+
+    ws.addEventListener("close", () => {
+      if (!isSettled && !receivedDoneEvent) {
+        settleError(new Error("OpenAI realtime websocket closed before completion"))
+      }
+    })
+  })
+}
 
 const parseStructuredTranslation = (rawText: string) => {
   const trimmed = rawText.trim()
@@ -276,4 +304,68 @@ const buildTranslationPrompt = (text: string, targetLanguage: string) => {
     "Do not include markdown, code fences, or explanations.\n\n" +
     text
   )
+}
+
+const buildDefinitionPrompt = (words: string[], targetLanguage: string) => {
+  return (
+    `Write short English definitions for each word in this ${targetLanguage} list.\n` +
+    "Return only valid JSON with exactly this shape:\n" +
+    `{"definitions":[{"word":"...","definition":"..."}]}\n` +
+    "Return one entry per input word, in the same order.\n" +
+    "Keep each definition under 20 words.\n" +
+    "Do not include markdown, code fences, or explanations.\n\n" +
+    words.join("\n")
+  )
+}
+
+const parseStructuredDefinitions = (rawText: string, requestedWords: string[]) => {
+  const trimmed = rawText.trim()
+  const jsonCandidate = trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim()
+
+  if (!jsonCandidate) {
+    throw new Error("OpenAI returned an empty structured definitions response")
+  }
+
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(jsonCandidate)
+  } catch {
+    throw new Error("OpenAI returned invalid structured definitions JSON")
+  }
+
+  const parsedDefinitions =
+    parsed &&
+      typeof parsed === "object" &&
+      "definitions" in parsed &&
+      Array.isArray(parsed.definitions)
+      ? parsed.definitions
+      : []
+
+  const normalizedDefinitions = parsedDefinitions
+    .filter((value): value is { word?: unknown, definition?: unknown } => !!value && typeof value === "object")
+    .map((value) => ({
+      word: typeof value.word === "string" ? value.word.trim() : "",
+      definition: typeof value.definition === "string" ? value.definition.trim() : ""
+    }))
+    .filter((value) => !!value.word && !!value.definition)
+
+  if (!normalizedDefinitions.length) {
+    throw new Error("OpenAI structured definitions response missing 'definitions'")
+  }
+
+  const definitionByWord = new Map(normalizedDefinitions.map((item) => [item.word, item.definition]))
+  const definitions = requestedWords
+    .map((word) => ({
+      word,
+      definition: definitionByWord.get(word) || ""
+    }))
+    .filter((item) => !!item.definition)
+
+  return {
+    definitions
+  } satisfies DefinitionsStructuredOutput
 }

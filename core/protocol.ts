@@ -8,6 +8,19 @@ type TranslateWsRequestMessage = {
   model?: TranslateModel
 }
 
+type TranslateWordDefinition = {
+  word: string
+  definition: string
+}
+
+type TranslateWsDefinitionsRequestMessage = {
+  type: "translate.definitions.request"
+  requestId: string
+  words: string[]
+  targetLanguage: string
+  model?: TranslateModel
+}
+
 type TranslateWsReadyMessage = {
   type: "ready"
 }
@@ -19,22 +32,34 @@ type TranslateWsSuccessMessage = {
   transliteration: string
 }
 
+type TranslateWsDefinitionsSuccessMessage = {
+  type: "translate.definitions.success"
+  requestId: string
+  definitions: TranslateWordDefinition[]
+}
+
 type TranslateWsErrorMessage = {
   type: "translate.error"
   requestId?: string
   error: string
 }
 
-type TranslateWsClientMessage = TranslateWsRequestMessage
+type TranslateWsClientMessage =
+  | TranslateWsRequestMessage
+  | TranslateWsDefinitionsRequestMessage
 
 type TranslateWsServerMessage =
   | TranslateWsReadyMessage
   | TranslateWsSuccessMessage
+  | TranslateWsDefinitionsSuccessMessage
   | TranslateWsErrorMessage
 
 export type {
   TranslateModel,
+  TranslateWordDefinition,
   TranslateWsClientMessage,
+  TranslateWsDefinitionsRequestMessage,
+  TranslateWsDefinitionsSuccessMessage,
   TranslateWsErrorMessage,
   TranslateWsRequestMessage,
   TranslateWsServerMessage,

@@ -1,4 +1,10 @@
-import { TranslateModel, TranslateWsRequestMessage, TranslateWsServerMessage } from "@template/core"
+import {
+  TranslateModel,
+  TranslateWordDefinition,
+  TranslateWsDefinitionsRequestMessage,
+  TranslateWsRequestMessage,
+  TranslateWsServerMessage
+} from "@template/core"
 import { LanguageOption, TextPane, Transliteration, TranslateToolbar } from "@template/web"
 import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
@@ -47,6 +53,14 @@ const getRequestSignature = ({ text, targetLanguage, model }: { text: string, ta
   return `${model}::${normalizedText}::${targetLanguage}`
 }
 
+const getDefinitionRequestSignature = (
+  words: string[],
+  targetLanguage: string,
+  model: TranslateModel
+) => {
+  return `${model}::${targetLanguage}::${words.join("\u0000")}`
+}
+
 const App = () => {
   const [inputText, setInputText] = useState("")
   const [outputWords, setOutputWords] = useState<string[]>([])
@@ -66,6 +80,9 @@ const App = () => {
   } | null>(null)
   const [targetLanguage, setTargetLanguage] = useState(languageOptions[1].value)
   const [selectedModel, setSelectedModel] = useState<TranslateModel>("openai")
+  const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
+  const [wordDefinitions, setWordDefinitions] = useState<TranslateWordDefinition[]>([])
+  const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
   const socketRef = useRef<WebSocket | null>(null)
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingInputSelectionRef = useRef<{ start: number, end: number } | null>(null)
@@ -77,6 +94,8 @@ const App = () => {
   })
   const currentNormalizedInputTextRef = useRef("")
   const lastRequestedSignatureRef = useRef("")
+  const latestDefinitionsRequestIdRef = useRef("")
+  const lastDefinitionRequestSignatureRef = useRef("")
   const normalizedInputText = normalizeText(inputText)
   const hasInputText = !!normalizedInputText
   const isSpinnerVisible =
@@ -120,6 +139,38 @@ const App = () => {
     }
 
     console.log("Sending translate request", request)
+
+    socket.send(JSON.stringify(request))
+  }
+
+  const sendDefinitionsRequest = (words: string[]) => {
+    const socket = socketRef.current
+
+    if (!words.length || !socket || socket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    const requestSignature = getDefinitionRequestSignature(words, targetLanguage, selectedModel)
+
+    if (lastDefinitionRequestSignatureRef.current === requestSignature) {
+      return
+    }
+
+    requestCounterRef.current += 1
+    const requestId = `${Date.now()}-${requestCounterRef.current}`
+    latestDefinitionsRequestIdRef.current = requestId
+    lastDefinitionRequestSignatureRef.current = requestSignature
+    setIsDefinitionLoading(true)
+
+    const request: TranslateWsDefinitionsRequestMessage = {
+      type: "translate.definitions.request",
+      requestId,
+      words,
+      targetLanguage,
+      model: selectedModel
+    }
+
+    console.log("Sending definitions request", request)
 
     socket.send(JSON.stringify(request))
   }
@@ -172,6 +223,26 @@ const App = () => {
           return
         }
 
+        if (message.type === "translate.definitions.success") {
+          if (message.requestId !== latestDefinitionsRequestIdRef.current) {
+            return
+          }
+
+          setWordDefinitions(message.definitions)
+          setIsDefinitionLoading(false)
+          return
+        }
+
+        if (
+          message.type === "translate.error" &&
+          message.requestId &&
+          message.requestId === latestDefinitionsRequestIdRef.current
+        ) {
+          setWordDefinitions([])
+          setIsDefinitionLoading(false)
+          return
+        }
+
         const latestRequestId = latestRequestRef.current.id
         const latestRequestInput = latestRequestRef.current.normalizedInputText
         const currentInput = currentNormalizedInputTextRef.current
@@ -191,6 +262,11 @@ const App = () => {
         if (message.type === "translate.success") {
           setOutputWords(message.words)
           setOutputTransliteration(message.transliteration)
+          setSelectedOutputWords([])
+          setWordDefinitions([])
+          setIsDefinitionLoading(false)
+          latestDefinitionsRequestIdRef.current = ""
+          lastDefinitionRequestSignatureRef.current = ""
           setErrorText("")
           return
         }
@@ -217,10 +293,13 @@ const App = () => {
 
         setIsSocketOpen(false)
         setIsTranslating(false)
+        setIsDefinitionLoading(false)
         latestRequestRef.current = { id: "", normalizedInputText: "" }
         setLatestRequestSnapshot(latestRequestRef.current)
         currentNormalizedInputTextRef.current = ""
         lastRequestedSignatureRef.current = ""
+        latestDefinitionsRequestIdRef.current = ""
+        lastDefinitionRequestSignatureRef.current = ""
         reconnectTimeoutIdRef.current = window.setTimeout(() => {
           connectSocket()
         }, 500)
@@ -311,11 +390,16 @@ const App = () => {
     if (!trimmedText) {
       setOutputWords([])
       setOutputTransliteration("")
+      setSelectedOutputWords([])
+      setWordDefinitions([])
+      setIsDefinitionLoading(false)
       setErrorText("")
       setDebouncedRequest(null)
       latestRequestRef.current = { id: "", normalizedInputText: "" }
       setLatestRequestSnapshot(latestRequestRef.current)
       lastRequestedSignatureRef.current = ""
+      latestDefinitionsRequestIdRef.current = ""
+      lastDefinitionRequestSignatureRef.current = ""
       return
     }
 
@@ -339,11 +423,16 @@ const App = () => {
     if (!trimmedText) {
       setOutputWords([])
       setOutputTransliteration("")
+      setSelectedOutputWords([])
+      setWordDefinitions([])
+      setIsDefinitionLoading(false)
       setErrorText("")
       setDebouncedRequest(null)
       latestRequestRef.current = { id: "", normalizedInputText: "" }
       setLatestRequestSnapshot(latestRequestRef.current)
       lastRequestedSignatureRef.current = ""
+      latestDefinitionsRequestIdRef.current = ""
+      lastDefinitionRequestSignatureRef.current = ""
       return
     }
 
@@ -367,6 +456,33 @@ const App = () => {
 
     sendTranslateRequest(debouncedRequest)
   }, [debouncedRequest, isSocketOpen])
+
+  useEffect(() => {
+    if (!selectedOutputWords.length) {
+      setWordDefinitions([])
+      setIsDefinitionLoading(false)
+      latestDefinitionsRequestIdRef.current = ""
+      lastDefinitionRequestSignatureRef.current = ""
+      return
+    }
+
+    if (!isSocketOpen) {
+      return
+    }
+
+    const uniqueWords = Array.from(new Set(selectedOutputWords))
+    const timeoutId = window.setTimeout(() => {
+      sendDefinitionsRequest(uniqueWords)
+    }, 200)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [selectedOutputWords, isSocketOpen, selectedModel, targetLanguage])
+
+  const definitionByWord = new Map(
+    wordDefinitions.map((entry) => [entry.word, entry.definition])
+  )
 
   return (
     <main>
@@ -423,10 +539,30 @@ const App = () => {
           ) : null}
           readOnly
           enableTokenSelection
-          onSelectionChange={(selection) => {
-            console.log("Output selection:", selection)
+          onSelectionChange={(selectionWords) => {
+            setSelectedOutputWords(selectionWords)
           }}
         />
+
+        {selectedOutputWords.map((word, index) => {
+          const definition = definitionByWord.get(word) || ""
+          const paneValue = definition ? `${word} — ${definition}` : word
+
+          return (
+            <TextPane
+              key={`${word}-${index}`}
+              id={`definition-pane-${index}-title`}
+              title=""
+              showHeader={false}
+              className="pane-definition fade-in"
+              placeholder=""
+              ariaLabel={`Definition for ${word}`}
+              value={paneValue}
+              autoFocus={false}
+              readOnly
+            />
+          )
+        })}
 
         {hasInputText && isSpinnerVisible ? (
           <span className="spinner pane-stack-spinner" aria-hidden="true" />

@@ -50,7 +50,7 @@ type TextPaneProps = {
   readOnly: boolean
   autoFocus: boolean
   onChange?: (value: string) => void
-  onSelectionChange?: (selection: string) => void
+  onSelectionChange?: (selectionWords: string[]) => void
   showHeader: boolean
   textareaRef?: MutableRefObject<HTMLTextAreaElement | null>
   enableTokenSelection?: boolean
@@ -175,13 +175,22 @@ const TextPane = ({
       })
     }
 
+    const clearSelection = () => {
+      if (!lastSelectionRef.current) {
+        return
+      }
+
+      lastSelectionRef.current = ""
+      onSelectionChange([])
+    }
+
     const handleSelectionChange = () => {
       const contentElement = textContentRef.current
       const selection = window.getSelection()
 
       if (!contentElement || !selection || selection.rangeCount === 0) {
         updateSelectedTokenStyles(null)
-        lastSelectionRef.current = ""
+        clearSelection()
         return
       }
 
@@ -192,20 +201,29 @@ const TextPane = ({
 
       if (!isSelectionInsideText) {
         updateSelectedTokenStyles(null)
-        lastSelectionRef.current = ""
+        clearSelection()
         return
       }
 
       updateSelectedTokenStyles(range)
+      const tokenElements = Array.from(contentElement.querySelectorAll<HTMLSpanElement>(".pane-text-token"))
+      const selectedWords = tokenElements
+        .filter((tokenElement) => range.intersectsNode(tokenElement))
+        .map((tokenElement) => (tokenElement.textContent || "").trim())
+        .filter(Boolean)
+      const nextSelectionKey = selectedWords.join("\u0000")
 
-      const nextSelection = selection.toString()
-
-      if (!nextSelection || nextSelection === lastSelectionRef.current) {
+      if (!nextSelectionKey) {
+        clearSelection()
         return
       }
 
-      lastSelectionRef.current = nextSelection
-      onSelectionChange(nextSelection)
+      if (nextSelectionKey === lastSelectionRef.current) {
+        return
+      }
+
+      lastSelectionRef.current = nextSelectionKey
+      onSelectionChange(selectedWords)
     }
 
     document.addEventListener("selectionchange", handleSelectionChange)

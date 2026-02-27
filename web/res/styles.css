@@ -330,6 +330,11 @@ main {
   border-top-color: transparent;
 }
 
+.pane-definition .pane-textarea {
+  text-align: left;
+  font-size: 0.95rem;
+}
+
 .pane-header {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid rgba(16, 24, 32, 0.12);
