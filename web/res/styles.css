@@ -286,6 +286,12 @@ main {
   flex: 1;
   min-height: 0;
   pointer-events: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pane-stack::-webkit-scrollbar {
+  display: none;
 }
 
 .pane {
