@@ -364,7 +364,7 @@ const App = () => {
             selection.removeAllRanges()
           }
 
-          console.log("got translation", message.words)
+          // console.log("got translation", message.words)
 
           setOutputWords(message.words)
           setSelectedOutputWords([])
