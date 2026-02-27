@@ -16,7 +16,13 @@ body {
   padding-right: 1rem;
   user-select: none;
   cursor: default;
-  overflow: hidden;
+}
+
+select {
+  -webkit-appearance: none;
+  /* appearance: none;
+  background: none;
+  border-radius: 0; */
 }
 
 #app {
@@ -281,18 +287,23 @@ main {
   margin-top: 0;
   z-index: 1;
 
-  overflow-y: auto;
+  /* transform: translateY(-50%); */
+  /* margin-top: 10% */
+
+  /* pointer-events: auto; */
+
+  /* overflow-y: auto;
   overflow-x: hidden;
   flex: 1;
   min-height: 0;
   pointer-events: auto;
   scrollbar-width: none;
-  -ms-overflow-style: none;
+  -ms-overflow-style: none; */
 }
 
-.pane-stack::-webkit-scrollbar {
+/* .pane-stack::-webkit-scrollbar {
   display: none;
-}
+} */
 
 .pane {
   background: rgba(255, 255, 255, 0.72);
@@ -441,7 +452,7 @@ main {
 }
 
 /* .pane-text-token-space { */
-  /* cursor: text; */
+/* cursor: text; */
 /* } */
 
 .pane-footer {
@@ -535,6 +546,7 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .pane,
   .pane-stack .pane,
   .pane-stack .pane-textarea,
@@ -590,6 +602,6 @@ main {
   } */
 
   /* .language-bubble { */
-    /* font-size: clamp(0.6rem, 2.8vw, 0.9rem); */
+  /* font-size: clamp(0.6rem, 2.8vw, 0.9rem); */
   /* } */
 }
