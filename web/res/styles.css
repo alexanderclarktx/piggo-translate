@@ -12,6 +12,8 @@
 body {
   margin: 0;
   padding: 2rem;
+  user-select: none;
+  cursor: default;
 }
 
 #app {
@@ -26,7 +28,7 @@ h1 {
   justify-content: center;
   font-family: 'Courier New', monospace;
   font-weight: 400;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   margin: 0;
@@ -54,17 +56,16 @@ h1 {
     animation: none;
   }
 
-  .pane-fade-in {
+  .fade-in {
     animation: none;
   }
 }
 
 .title-icon {
-  width: 1.8rem;
-  height: 1.8rem;
-  display: block;
-  flex-shrink: 0;
-  align-self: flex-start;
+  justify-self: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  user-select: none;
 }
 
 h2 {
@@ -74,7 +75,7 @@ h2 {
 
 main {
   display: grid;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .app-version {
@@ -105,7 +106,7 @@ main {
   color: inherit;
   font: inherit;
   font-size: 0.85rem;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: background-color 160ms ease-out, box-shadow 500ms ease-out,
     transform 160ms ease-out;
 }
@@ -196,7 +197,7 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: background-color 500ms ease-out, border-color 500ms ease-out,
     box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -279,13 +280,8 @@ main {
   transition: height 500ms ease;
 }
 
-.pane-stack-spinner {
-  position: absolute;
-  right: 0.75rem;
-  bottom: 0.75rem;
-  z-index: 1;
-  border-color: rgba(0, 0, 0, 0.2);
-  border-top-color: #000000;
+.pane-stack .pane-text-content {
+  transition: height 500ms ease;
 }
 
 .pane {
@@ -295,15 +291,22 @@ main {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  cursor: initial;
+  position: relative;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
-.pane-fade-in {
-  animation: title-fade-in 500ms ease-out both;
+.pane-spinner {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 1;
+  border-color: rgba(0, 0, 0, 0.2);
+  border-top-color: #000000;
 }
 
-.long-fade-in {
-  animation: title-fade-in 500ms ease-in both;
+.fade-in {
+  animation: title-fade-in 500ms ease-out both;
 }
 
 .pane-no-header {
@@ -319,9 +322,18 @@ main {
   background: transparent;
 }
 
+.pane-transparent .pane-text-content {
+  background: transparent;
+}
+
 .pane-transparent .pane-footer {
   background: transparent;
   border-top-color: transparent;
+}
+
+.pane-definition .pane-textarea {
+  text-align: left;
+  font-size: 0.95rem;
 }
 
 .pane-header {
@@ -344,6 +356,7 @@ main {
   outline: none;
   overflow: hidden;
   cursor: default;
+  text-align: center;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
@@ -353,13 +366,75 @@ main {
 
 .pane-textarea[readonly] {
   background: rgba(255, 255, 255, 0.28);
-  cursor: default;
+  /* cursor: default; */
   pointer-events: none;
 }
 
+.pane-text-content {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: rgba(255, 255, 255, 0.28);
+  padding: 1rem;
+  font: inherit;
+  color: inherit;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+}
+
+.pane-text-content-selectable {
+  user-select: text;
+  /* cursor: text; */
+}
+
+.pane-text-content-selectable ::selection {
+  background: transparent;
+}
+
+.pane-text-token {
+  border-radius: 0.2rem;
+  cursor: default;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.pane-text-token-selectable:hover {
+  background: rgba(60, 60, 60, 0.1);
+}
+
+.pane-text-token-nonselectable {
+  pointer-events: none;
+}
+
+.pane-text-token:focus-visible {
+  outline: 2px solid rgba(60, 60, 60, 0.32);
+  outline-offset: 1px;
+}
+
+.pane-text-token-selected {
+  background: rgba(60, 60, 60, 0.16);
+  border-radius: 0;
+}
+
+.pane-text-token-selected-start {
+  border-top-left-radius: 0.2rem;
+  border-bottom-left-radius: 0.2rem;
+}
+
+.pane-text-token-selected-end {
+  border-top-right-radius: 0.2rem;
+  border-bottom-right-radius: 0.2rem;
+}
+
+/* .pane-text-token-space { */
+  /* cursor: text; */
+/* } */
+
 .pane-footer {
   border-top: 1px solid rgba(16, 24, 32, 0.08);
-  background: rgba(255, 255, 255, 0.18);
   padding: 0.65rem 1rem 0.75rem;
   min-width: 0;
   transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
@@ -368,25 +443,17 @@ main {
 .transliteration-box {
   width: 100%;
   border: 0;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.2);
   color: #3c3519;
   padding: 0;
-  cursor: pointer;
+  /* cursor: pointer; */
   border-radius: 0.5rem;
   overflow: hidden;
   transition: background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
 }
 
-.transliteration-box:hover {
-  background: rgba(50, 50, 50, 0.05);
-}
-
-.transliteration-box.is-collapsed:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
 .transliteration-box:disabled {
-  cursor: default;
+  /* cursor: default; */
   pointer-events: none;
 }
 
@@ -397,12 +464,15 @@ main {
 
 .transliteration-box.is-collapsed {
   padding: 0.1rem 0;
-  background: rgba(255, 255, 255, 0.2);
+}
+
+.transliteration-box:hover {
+  background: rgba(255, 255, 255, 0.3);
+  /* cursor: initial; */
 }
 
 .transliteration-collapsed-label {
   display: block;
-  color: #5f5230;
   font-size: 0.84rem;
   min-height: 0;
   max-height: 0;

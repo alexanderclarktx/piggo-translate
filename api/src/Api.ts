@@ -1,7 +1,7 @@
 import {
-  TranslateModel, TranslateWsClientMessage
+  TranslateModel
 } from "@template/core"
-import { AnthropicTranslator, httpJson, httpText, OpenAiTranslator } from "@template/api"
+import { httpJson, httpText, OpenAiTranslator } from "@template/api"
 
 const logServerError = (context: string, error: unknown) => {
   if (error instanceof Error) {
@@ -35,21 +35,38 @@ const normalizeTranslateInput = (
 
 const parseTranslateWsMessage = (
   rawMessage: unknown
-): { error: string } | {
+): { error: string } | ({
+  type: "translate.request"
   requestId: string
   text: string
   targetLanguage: string
   model: TranslateModel
-} => {
+} | {
+  type: "translate.definitions.request"
+  requestId: string
+  word: string
+  targetLanguage: string
+  model: TranslateModel
+}) => {
   if (!rawMessage || typeof rawMessage !== "object") {
     return {
       error: "Invalid websocket message"
     }
   }
 
-  const message = rawMessage as Partial<TranslateWsClientMessage>
+  const message = rawMessage as {
+    type?: string
+    requestId?: unknown
+    text?: unknown
+    targetLanguage?: unknown
+    model?: unknown
+    word?: unknown
+  }
 
-  if (message.type !== "translate.request") {
+  if (
+    message.type !== "translate.request" &&
+    message.type !== "translate.definitions.request"
+  ) {
     return {
       error: "Unsupported websocket message type"
     }
@@ -61,28 +78,55 @@ const parseTranslateWsMessage = (
     }
   }
 
-  const { text, targetLanguage } = normalizeTranslateInput(
-    message.text,
-    message.targetLanguage,
-    message.model
-  )
+  if (message.type === "translate.request") {
+    const { text, targetLanguage } = normalizeTranslateInput(
+      message.text,
+      message.targetLanguage,
+      message.model
+    )
 
-  if (!text) {
+    if (!text) {
+      return {
+        error: "Websocket message must include a non-empty 'text' string"
+      }
+    }
+
+    if (!targetLanguage) {
+      return {
+        error: "Websocket message must include a non-empty 'targetLanguage' string"
+      }
+    }
+
     return {
-      error: "Websocket message must include a non-empty 'text' string"
+      type: "translate.request",
+      requestId: message.requestId.trim(),
+      text,
+      targetLanguage,
+      model: message.model === "anthropic" ? "anthropic" : "openai"
     }
   }
 
-  if (!targetLanguage) {
+  const word = typeof message.word === "string" ? message.word.trim() : ""
+  const normalizedTargetLanguage =
+    typeof message.targetLanguage === "string" ? message.targetLanguage.trim() : ""
+
+  if (!word) {
+    return {
+      error: "Websocket message must include a non-empty 'word' string"
+    }
+  }
+
+  if (!normalizedTargetLanguage) {
     return {
       error: "Websocket message must include a non-empty 'targetLanguage' string"
     }
   }
 
   return {
+    type: "translate.definitions.request",
     requestId: message.requestId.trim(),
-    text,
-    targetLanguage,
+    word,
+    targetLanguage: normalizedTargetLanguage,
     model: message.model === "anthropic" ? "anthropic" : "openai"
   }
 }
@@ -96,13 +140,19 @@ const parseWsJsonMessage = (message: string | Uint8Array | Buffer) => {
 
 export const createApiServer = () => {
 
-  const anthropicTranslator = AnthropicTranslator()
+  // const anthropicTranslator = AnthropicTranslator()
   const openAiTranslator = OpenAiTranslator()
 
   const translateWithModel = async (model: TranslateModel, text: string, targetLanguage: string) => {
-    const translator = model === "anthropic" ? anthropicTranslator : openAiTranslator
+    const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
 
     return translator.translate(text, targetLanguage)
+  }
+
+  const getDefinitionsWithModel = async (model: TranslateModel, word: string, targetLanguage: string) => {
+    const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
+
+    return translator.getDefinitions(word, targetLanguage)
   }
 
   const server = Bun.serve({
@@ -158,24 +208,52 @@ export const createApiServer = () => {
           return
         }
 
+        if (parsedMessage.type === "translate.request") {
+          try {
+            const translatedOutput = await translateWithModel(
+              parsedMessage.model,
+              parsedMessage.text,
+              parsedMessage.targetLanguage
+            )
+
+            ws.send(JSON.stringify({
+              type: "translate.success",
+              requestId: parsedMessage.requestId,
+              words: translatedOutput.words
+            }))
+          } catch (error) {
+            logServerError(`WS translate ${parsedMessage.requestId}`, error)
+
+            const messageText =
+              error instanceof Error ? error.message : "Translation failed"
+
+            ws.send(JSON.stringify({
+              type: "translate.error",
+              requestId: parsedMessage.requestId,
+              error: messageText
+            }))
+          }
+
+          return
+        }
+
         try {
-          const translatedOutput = await translateWithModel(
+          const definitions = await getDefinitionsWithModel(
             parsedMessage.model,
-            parsedMessage.text,
+            parsedMessage.word,
             parsedMessage.targetLanguage
           )
 
           ws.send(JSON.stringify({
-            type: "translate.success",
+            type: "translate.definitions.success",
             requestId: parsedMessage.requestId,
-            text: translatedOutput.translation,
-            transliteration: translatedOutput.transliteration
+            definitions
           }))
         } catch (error) {
-          logServerError(`WS translate ${parsedMessage.requestId}`, error)
+          logServerError(`WS definitions ${parsedMessage.requestId}`, error)
 
           const messageText =
-            error instanceof Error ? error.message : "Translation failed"
+            error instanceof Error ? error.message : "Definition lookup failed"
 
           ws.send(JSON.stringify({
             type: "translate.error",

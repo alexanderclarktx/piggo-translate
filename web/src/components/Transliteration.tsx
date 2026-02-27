@@ -89,7 +89,7 @@ const Transliteration = ({ value, isVisible, onToggle }: TransliterationProps) =
   return (
     <button
       type="button"
-      className={`transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""} pane-fade-in`}
+      className={`transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""} fade-in`}
       aria-label={
         !hasValue
           ? "No transliteration available"

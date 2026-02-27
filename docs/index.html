@@ -1,14 +1,26 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Piggo Translate</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="index.js"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+
+  <title>Piggo Translate</title>
+
+  <!-- iOS -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="piggo.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preload" as="image" type="image/svg+xml" href="piggo.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="index.js"></script>
+</body>
+
 </html>

@@ -17110,6 +17110,9 @@ var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
 var textPaneAnimationMinIntervalMs = 10;
 var textPaneAnimationMaxIntervalMs = 110;
 var textPaneAnimationFastThreshold = 24;
+var selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu;
+var selectionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
+var getSelectionWord = (value) => value.replace(selectionWordStripPattern, "");
 var getSharedPrefixLength = (left, right) => {
   const maxLength = Math.min(left.length, right.length);
   let index = 0;
@@ -17134,6 +17137,51 @@ var getDynamicIntervalDuration = (currentText, desiredText) => {
   const result = Math.round(textPaneAnimationMaxIntervalMs - intervalRange * clampedProgress);
   return result;
 };
+var buildSelectableDisplayText = (tokens, shouldUseWordJoiner, selectionWordJoiner) => {
+  if (!tokens.length) {
+    return "";
+  }
+  return tokens.reduce((result, token, tokenIndex) => {
+    const joiner = shouldUseWordJoiner && tokenIndex < tokens.length - 1 ? selectionWordJoiner : "";
+    return `${result}${token.value}${joiner}`;
+  }, "");
+};
+var getAnimatedSelectableTokens = (targetTokens, animatedText, shouldUseWordJoiner, selectionWordJoiner) => {
+  if (!targetTokens.length || !animatedText) {
+    return [];
+  }
+  let remainingText = animatedText;
+  const nextTokens = targetTokens.flatMap((token, tokenIndex) => {
+    if (!remainingText) {
+      return [];
+    }
+    const visibleTokenValue = remainingText.slice(0, token.value.length);
+    remainingText = remainingText.slice(visibleTokenValue.length);
+    const tokenEntries = [];
+    const isTokenFullyVisible = visibleTokenValue.length === token.value.length;
+    if (visibleTokenValue) {
+      tokenEntries.push({
+        value: visibleTokenValue,
+        selectionWord: isTokenFullyVisible ? token.selectionWord : "",
+        selectable: isTokenFullyVisible ? token.selectable : false
+      });
+    }
+    const shouldAppendJoiner = shouldUseWordJoiner && tokenIndex < targetTokens.length - 1 && !!selectionWordJoiner;
+    if (shouldAppendJoiner && remainingText) {
+      const visibleJoinerValue = remainingText.slice(0, selectionWordJoiner.length);
+      if (visibleJoinerValue) {
+        tokenEntries.push({
+          value: visibleJoinerValue,
+          selectionWord: "",
+          selectable: false
+        });
+        remainingText = remainingText.slice(visibleJoinerValue.length);
+      }
+    }
+    return tokenEntries;
+  });
+  return nextTokens;
+};
 var TextPane = ({
   id,
   title,
@@ -17146,16 +17194,50 @@ var TextPane = ({
   readOnly,
   autoFocus,
   onChange,
+  onSelectionChange,
   showHeader,
-  textareaRef
+  textareaRef,
+  enableTokenSelection,
+  animateOnMount,
+  selectionWords,
+  selectionTokens,
+  selectionWordJoiner = " "
 }) => {
   const localTextareaRef = import_react.useRef(null);
-  const [text, setText] = import_react.useState(value);
+  const textContentRef = import_react.useRef(null);
+  const lastSelectionRef = import_react.useRef("");
+  const shouldAnimateOnMountRef = import_react.useRef(!!animateOnMount);
+  const initialText = shouldAnimateOnMountRef.current ? "" : value;
+  const [text, setText] = import_react.useState(initialText);
   const [desiredText, setDesiredText] = import_react.useState(value);
   const paneClassName = [showHeader ? "pane" : "pane pane-no-header", className].filter(Boolean).join(" ");
+  const normalizedSelectionTokens = selectionTokens && selectionTokens.length ? selectionTokens : selectionWords && selectionWords.length ? selectionWords.map((value2) => {
+    const selectionWord = getSelectionWord(value2);
+    return {
+      value: value2,
+      selectionWord,
+      selectable: !!selectionWord
+    };
+  }) : [];
+  const shouldUseSelectionTokens = normalizedSelectionTokens.length > 0;
+  const shouldUseWordJoiner = shouldUseSelectionTokens && normalizedSelectionTokens.length > 1;
+  const selectableTextTarget = shouldUseSelectionTokens ? buildSelectableDisplayText(normalizedSelectionTokens, shouldUseWordJoiner, selectionWordJoiner) : value;
+  const staticSelectableTokens = shouldUseSelectionTokens ? normalizedSelectionTokens : (text.match(selectableOutputTokenPattern) ?? []).map((token) => {
+    const selectionWord = getSelectionWord(token);
+    return {
+      value: token,
+      selectionWord,
+      selectable: !!selectionWord
+    };
+  });
+  const selectableTokens = shouldUseSelectionTokens ? getAnimatedSelectableTokens(staticSelectableTokens, text, shouldUseWordJoiner, selectionWordJoiner) : staticSelectableTokens;
+  const shouldRenderSelectableOutput = !!enableTokenSelection;
   import_react.useEffect(() => {
-    setDesiredText(value);
-  }, [readOnly, value]);
+    if (shouldAnimateOnMountRef.current) {
+      shouldAnimateOnMountRef.current = false;
+    }
+    setDesiredText(selectableTextTarget);
+  }, [readOnly, selectableTextTarget]);
   import_react.useEffect(() => {
     if (!desiredText) {
       setText("");
@@ -17183,13 +17265,148 @@ var TextPane = ({
     };
   }, [desiredText, text]);
   import_react.useLayoutEffect(() => {
+    if (shouldRenderSelectableOutput) {
+      return;
+    }
     const textarea = localTextareaRef.current;
     if (!textarea) {
       return;
     }
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
-  }, [text]);
+  }, [shouldRenderSelectableOutput, text]);
+  import_react.useEffect(() => {
+    if (!shouldRenderSelectableOutput || !onSelectionChange) {
+      return;
+    }
+    const getTokenElementFromNode = (node) => {
+      if (!node) {
+        return null;
+      }
+      const element = node instanceof Element ? node : node.parentElement;
+      return element?.closest(".pane-text-token") ?? null;
+    };
+    const updateSelectedTokenStyles = (range) => {
+      const contentElement = textContentRef.current;
+      if (!contentElement) {
+        return;
+      }
+      const tokenElements = Array.from(contentElement.querySelectorAll(".pane-text-token"));
+      tokenElements.forEach((tokenElement) => {
+        tokenElement.classList.remove("pane-text-token-selected");
+        tokenElement.classList.remove("pane-text-token-selected-start");
+        tokenElement.classList.remove("pane-text-token-selected-end");
+      });
+      if (!range || range.collapsed) {
+        return;
+      }
+      tokenElements.forEach((tokenElement) => {
+        if (range.intersectsNode(tokenElement)) {
+          tokenElement.classList.add("pane-text-token-selected");
+        }
+      });
+      tokenElements.forEach((tokenElement, tokenIndex) => {
+        const isSelected = tokenElement.classList.contains("pane-text-token-selected");
+        const isPreviousSelected = tokenElements[tokenIndex - 1]?.classList.contains("pane-text-token-selected");
+        const isNextSelected = tokenElements[tokenIndex + 1]?.classList.contains("pane-text-token-selected");
+        if (isSelected && !isPreviousSelected) {
+          tokenElement.classList.add("pane-text-token-selected-start");
+        }
+        if (isSelected && !isNextSelected) {
+          tokenElement.classList.add("pane-text-token-selected-end");
+        }
+      });
+    };
+    const clearSelection = () => {
+      if (!lastSelectionRef.current) {
+        return;
+      }
+      lastSelectionRef.current = "";
+      onSelectionChange([]);
+    };
+    const handleSelectionChange = () => {
+      const contentElement = textContentRef.current;
+      const selection = window.getSelection();
+      if (!contentElement || !selection || selection.rangeCount === 0) {
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      const isSelectionInsideText = contentElement.contains(range.startContainer) && contentElement.contains(range.endContainer);
+      if (!isSelectionInsideText) {
+        return;
+      }
+      if (selection.isCollapsed) {
+        return;
+      }
+      const tokenElements = Array.from(contentElement.querySelectorAll(".pane-text-token"));
+      const anchorTokenElement = getTokenElementFromNode(selection.anchorNode);
+      const focusTokenElement = getTokenElementFromNode(selection.focusNode);
+      const selectedTokenElement = [anchorTokenElement, focusTokenElement].find((tokenElement) => !!tokenElement && contentElement.contains(tokenElement) && !!tokenElement.dataset.selectionWord) || tokenElements.find((tokenElement) => range.intersectsNode(tokenElement) && !!tokenElement.dataset.selectionWord) || null;
+      if (!selectedTokenElement) {
+        updateSelectedTokenStyles(null);
+        clearSelection();
+        return;
+      }
+      const selectedWord = selectedTokenElement.dataset.selectionWord || getSelectionWord(selectedTokenElement.textContent || "");
+      const nextSelectionKey = selectedWord;
+      if (!nextSelectionKey) {
+        updateSelectedTokenStyles(null);
+        clearSelection();
+        return;
+      }
+      const normalizedRange = document.createRange();
+      normalizedRange.selectNodeContents(selectedTokenElement);
+      selection.removeAllRanges();
+      selection.addRange(normalizedRange);
+      updateSelectedTokenStyles(normalizedRange);
+      if (nextSelectionKey === lastSelectionRef.current) {
+        return;
+      }
+      lastSelectionRef.current = nextSelectionKey;
+      onSelectionChange([selectedWord]);
+    };
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, [onSelectionChange, shouldRenderSelectableOutput]);
+  const selectToken = (tokenElement) => {
+    const selection = window.getSelection();
+    if (!selection) {
+      return;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(tokenElement);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+  const clearSelectableOutputSelection = () => {
+    if (!onSelectionChange) {
+      return;
+    }
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    const contentElement = textContentRef.current;
+    if (contentElement) {
+      const tokenElements = Array.from(contentElement.querySelectorAll(".pane-text-token"));
+      tokenElements.forEach((tokenElement) => {
+        tokenElement.classList.remove("pane-text-token-selected");
+        tokenElement.classList.remove("pane-text-token-selected-start");
+        tokenElement.classList.remove("pane-text-token-selected-end");
+      });
+    }
+    if (!lastSelectionRef.current) {
+      return;
+    }
+    lastSelectionRef.current = "";
+    onSelectionChange([]);
+  };
+  import_react.useEffect(() => {
+    if (!shouldRenderSelectableOutput) {
+      return;
+    }
+    clearSelectableOutputSelection();
+  }, [shouldRenderSelectableOutput, value]);
   return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("section", {
     className: paneClassName,
     "aria-labelledby": showHeader ? id : undefined,
@@ -17202,7 +17419,47 @@ var TextPane = ({
           children: title
         }, undefined, false, undefined, this)
       }, undefined, false, undefined, this) : null,
-      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("textarea", {
+      shouldRenderSelectableOutput ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+        ref: textContentRef,
+        className: "pane-text-content pane-text-content-selectable",
+        role: "textbox",
+        "aria-label": ariaLabel,
+        onMouseDown: (event) => {
+          const tokenElement = event.target.closest(".pane-text-token");
+          const isWordToken = !!tokenElement && !!tokenElement.dataset.selectionWord;
+          if (!isWordToken) {
+            clearSelectableOutputSelection();
+          }
+        },
+        children: selectableTokens.map((token, tokenIndex) => {
+          const tokenValue = token.value;
+          const isWhitespaceToken = !tokenValue.trim();
+          const selectionWord = token.selectionWord ?? getSelectionWord(tokenValue);
+          const isSelectableToken = token.selectable ?? !!selectionWord;
+          const tokenClassName = [
+            "pane-text-token",
+            isWhitespaceToken ? "pane-text-token-space" : "",
+            isSelectableToken ? "pane-text-token-selectable" : "pane-text-token-nonselectable"
+          ].filter(Boolean).join(" ");
+          return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("span", {
+                className: tokenClassName,
+                "data-selection-word": isSelectableToken ? selectionWord : "",
+                onMouseDown: (event) => {
+                  if (isWhitespaceToken || !isSelectableToken) {
+                    return;
+                  }
+                  event.preventDefault();
+                  selectToken(event.currentTarget);
+                },
+                children: tokenValue
+              }, undefined, false, undefined, this),
+              shouldUseWordJoiner && tokenIndex < selectableTokens.length - 1 ? selectionWordJoiner : null
+            ]
+          }, `${tokenValue}-${tokenIndex}`, true, undefined, this);
+        })
+      }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("textarea", {
         ref: (node) => {
           localTextareaRef.current = node;
           if (textareaRef) {
@@ -17225,9 +17482,6 @@ var TextPane = ({
           setText(nextValue);
           setDesiredText(nextValue);
           onChange?.(nextValue);
-        },
-        style: {
-          textAlign: "center"
         }
       }, undefined, false, undefined, this),
       afterTextarea,
@@ -17300,7 +17554,7 @@ var Transliteration = ({ value, isVisible, onToggle }) => {
   }, [desiredText, text]);
   return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
     type: "button",
-    className: `transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""} pane-fade-in`,
+    className: `transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""} fade-in`,
     "aria-label": !hasValue ? "No transliteration available" : isExpanded ? "Hide transliteration" : "Show transliteration",
     "aria-expanded": isExpanded,
     "aria-hidden": !hasValue,
@@ -17335,6 +17589,33 @@ var getTranslateWsUrl = () => {
   return hostname === "localhost" ? "http://localhost:5001/api/ws" : "https://piggo-translate-production.up.railway.app/api/ws";
 };
 var normalizeText = (text) => text.replace(/\s+/g, " ").trim();
+var definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
+var normalizeDefinitionWord = (word) => word.replace(definitionWordStripPattern, "");
+var getUniqueDefinitionWords = (words) => Array.from(new Set(words.map((word) => normalizeDefinitionWord(word)).filter(Boolean)));
+var isSpaceSeparatedLanguage = (language) => !language.toLowerCase().includes("chinese") && !language.toLowerCase().includes("japanese");
+var noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/;
+var noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/;
+var joinOutputTokens = (tokens, targetLanguage, tokenKey, options) => {
+  const useSpaces = options?.forceSpaceSeparated || isSpaceSeparatedLanguage(targetLanguage);
+  return tokens.reduce((result, token, tokenIndex) => {
+    const tokenValue = token[tokenKey];
+    if (!tokenValue) {
+      return result;
+    }
+    if (!result) {
+      return tokenValue;
+    }
+    if (!useSpaces) {
+      return `${result}${tokenValue}`;
+    }
+    const previousToken = tokens[tokenIndex - 1];
+    const previousWord = previousToken?.word || "";
+    const hasNoSpaceBefore = token.punctuation && noSpaceBeforePunctuationPattern.test(token.word);
+    const hasNoSpaceAfterPrevious = !!previousToken?.punctuation && noSpaceAfterPunctuationPattern.test(previousWord);
+    const joiner = hasNoSpaceBefore || hasNoSpaceAfterPrevious ? "" : " ";
+    return `${result}${joiner}${tokenValue}`;
+  }, "");
+};
 var isEditableElement = (element) => {
   if (!(element instanceof HTMLElement)) {
     return false;
@@ -17351,10 +17632,13 @@ var getRequestSignature = ({ text, targetLanguage, model }) => {
   const normalizedText = normalizeText(text);
   return `${model}::${normalizedText}::${targetLanguage}`;
 };
+var getDefinitionRequestSignature = (word, targetLanguage, model) => {
+  return `${model}::${targetLanguage}::${normalizeDefinitionWord(word)}`;
+};
+var definitionCacheMaxItems = 10;
 var App = () => {
   const [inputText, setInputText] = import_react3.useState("");
-  const [outputText, setOutputText] = import_react3.useState("");
-  const [outputTransliteration, setOutputTransliteration] = import_react3.useState("");
+  const [outputWords, setOutputWords] = import_react3.useState([]);
   const [isTransliterationVisible, setIsTransliterationVisible] = import_react3.useState(true);
   const [errorText, setErrorText] = import_react3.useState("");
   const [isTranslating, setIsTranslating] = import_react3.useState(false);
@@ -17366,6 +17650,9 @@ var App = () => {
   const [debouncedRequest, setDebouncedRequest] = import_react3.useState(null);
   const [targetLanguage, setTargetLanguage] = import_react3.useState(languageOptions[1].value);
   const [selectedModel, setSelectedModel] = import_react3.useState("openai");
+  const [selectedOutputWords, setSelectedOutputWords] = import_react3.useState([]);
+  const [wordDefinitions, setWordDefinitions] = import_react3.useState([]);
+  const [isDefinitionLoading, setIsDefinitionLoading] = import_react3.useState(false);
   const socketRef = import_react3.useRef(null);
   const inputTextareaRef = import_react3.useRef(null);
   const pendingInputSelectionRef = import_react3.useRef(null);
@@ -17377,8 +17664,14 @@ var App = () => {
   });
   const currentNormalizedInputTextRef = import_react3.useRef("");
   const lastRequestedSignatureRef = import_react3.useRef("");
+  const latestDefinitionsRequestIdRef = import_react3.useRef("");
+  const lastDefinitionRequestSignatureRef = import_react3.useRef("");
+  const selectedOutputWordsRef = import_react3.useRef([]);
+  const definitionCacheRef = import_react3.useRef({});
+  const definitionCacheOrderRef = import_react3.useRef([]);
   const normalizedInputText = normalizeText(inputText);
   const hasInputText = !!normalizedInputText;
+  const hasOutputWords = outputWords.length > 0;
   const isSpinnerVisible = isTranslating && !!latestRequestSnapshot.id && normalizedInputText === latestRequestSnapshot.normalizedInputText;
   const sendTranslateRequest = (requestInput) => {
     const socket = socketRef.current;
@@ -17402,8 +17695,61 @@ var App = () => {
       targetLanguage: requestInput.targetLanguage,
       model: requestInput.model
     };
-    console.log("Sending translate request", request);
     socket.send(JSON.stringify(request));
+  };
+  const sendDefinitionsRequest = (word) => {
+    const socket = socketRef.current;
+    const normalizedWord = normalizeDefinitionWord(word);
+    if (!normalizedWord || !socket || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const requestSignature = getDefinitionRequestSignature(normalizedWord, targetLanguage, selectedModel);
+    if (lastDefinitionRequestSignatureRef.current === requestSignature) {
+      return;
+    }
+    requestCounterRef.current += 1;
+    const requestId = `${Date.now()}-${requestCounterRef.current}`;
+    latestDefinitionsRequestIdRef.current = requestId;
+    lastDefinitionRequestSignatureRef.current = requestSignature;
+    setIsDefinitionLoading(true);
+    const request = {
+      type: "translate.definitions.request",
+      requestId,
+      word: normalizedWord,
+      targetLanguage,
+      model: selectedModel
+    };
+    socket.send(JSON.stringify(request));
+  };
+  const getCachedDefinitions = (words) => {
+    const uniqueWords = getUniqueDefinitionWords(words);
+    return uniqueWords.map((word) => ({
+      word,
+      definition: definitionCacheRef.current[word] || ""
+    })).filter((entry) => !!entry.definition);
+  };
+  const getMissingDefinitionWords = (words) => {
+    const uniqueWords = getUniqueDefinitionWords(words);
+    const cachedWordSet = new Set(getCachedDefinitions(uniqueWords).map((entry) => entry.word));
+    return uniqueWords.filter((word) => !cachedWordSet.has(word));
+  };
+  const writeDefinitionsToCache = (definitions) => {
+    definitions.forEach(({ word, definition }) => {
+      const normalizedWord = normalizeDefinitionWord(word);
+      if (!normalizedWord || !definition) {
+        return;
+      }
+      definitionCacheRef.current[normalizedWord] = definition;
+      definitionCacheOrderRef.current = definitionCacheOrderRef.current.filter((cachedWord) => cachedWord !== normalizedWord);
+      definitionCacheOrderRef.current.push(normalizedWord);
+      while (definitionCacheOrderRef.current.length > definitionCacheMaxItems) {
+        const oldestWord = definitionCacheOrderRef.current.shift();
+        if (!oldestWord) {
+          return;
+        }
+        delete definitionCacheRef.current[oldestWord];
+      }
+    });
   };
   import_react3.useEffect(() => {
     let isDisposed = false;
@@ -17442,6 +17788,26 @@ var App = () => {
         if (message.type === "ready") {
           return;
         }
+        if (message.type === "translate.definitions.success") {
+          if (message.requestId !== latestDefinitionsRequestIdRef.current) {
+            return;
+          }
+          writeDefinitionsToCache(message.definitions);
+          const selectedWords = selectedOutputWordsRef.current;
+          setWordDefinitions(getCachedDefinitions(selectedWords));
+          const missingWords = getMissingDefinitionWords(selectedWords);
+          if (missingWords.length) {
+            sendDefinitionsRequest(missingWords[0]);
+          } else {
+            setIsDefinitionLoading(false);
+          }
+          return;
+        }
+        if (message.type === "translate.error" && message.requestId && message.requestId === latestDefinitionsRequestIdRef.current) {
+          setWordDefinitions([]);
+          setIsDefinitionLoading(false);
+          return;
+        }
         const latestRequestId = latestRequestRef.current.id;
         const latestRequestInput = latestRequestRef.current.normalizedInputText;
         const currentInput = currentNormalizedInputTextRef.current;
@@ -17451,8 +17817,17 @@ var App = () => {
         }
         setIsTranslating(false);
         if (message.type === "translate.success") {
-          setOutputText(message.text);
-          setOutputTransliteration(message.transliteration);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+          }
+          console.log("got translation", message.words);
+          setOutputWords(message.words);
+          setSelectedOutputWords([]);
+          setWordDefinitions([]);
+          setIsDefinitionLoading(false);
+          latestDefinitionsRequestIdRef.current = "";
+          lastDefinitionRequestSignatureRef.current = "";
           setErrorText("");
           return;
         }
@@ -17473,10 +17848,13 @@ var App = () => {
         }
         setIsSocketOpen(false);
         setIsTranslating(false);
+        setIsDefinitionLoading(false);
         latestRequestRef.current = { id: "", normalizedInputText: "" };
         setLatestRequestSnapshot(latestRequestRef.current);
         currentNormalizedInputTextRef.current = "";
         lastRequestedSignatureRef.current = "";
+        latestDefinitionsRequestIdRef.current = "";
+        lastDefinitionRequestSignatureRef.current = "";
         reconnectTimeoutIdRef.current = window.setTimeout(() => {
           connectSocket();
         }, 500);
@@ -17496,6 +17874,9 @@ var App = () => {
       }
     };
   }, []);
+  import_react3.useEffect(() => {
+    selectedOutputWordsRef.current = selectedOutputWords;
+  }, [selectedOutputWords]);
   import_react3.useEffect(() => {
     const textarea = inputTextareaRef.current;
     const pendingSelection = pendingInputSelectionRef.current;
@@ -17542,13 +17923,17 @@ var App = () => {
     const trimmedText = inputText.trim();
     currentNormalizedInputTextRef.current = normalizedInputText;
     if (!trimmedText) {
-      setOutputText("");
-      setOutputTransliteration("");
+      setOutputWords([]);
+      setSelectedOutputWords([]);
+      setWordDefinitions([]);
+      setIsDefinitionLoading(false);
       setErrorText("");
       setDebouncedRequest(null);
       latestRequestRef.current = { id: "", normalizedInputText: "" };
       setLatestRequestSnapshot(latestRequestRef.current);
       lastRequestedSignatureRef.current = "";
+      latestDefinitionsRequestIdRef.current = "";
+      lastDefinitionRequestSignatureRef.current = "";
       return;
     }
     const timeoutId = window.setTimeout(() => {
@@ -17565,13 +17950,17 @@ var App = () => {
   import_react3.useEffect(() => {
     const trimmedText = inputText.trim();
     if (!trimmedText) {
-      setOutputText("");
-      setOutputTransliteration("");
+      setOutputWords([]);
+      setSelectedOutputWords([]);
+      setWordDefinitions([]);
+      setIsDefinitionLoading(false);
       setErrorText("");
       setDebouncedRequest(null);
       latestRequestRef.current = { id: "", normalizedInputText: "" };
       setLatestRequestSnapshot(latestRequestRef.current);
       lastRequestedSignatureRef.current = "";
+      latestDefinitionsRequestIdRef.current = "";
+      lastDefinitionRequestSignatureRef.current = "";
       return;
     }
     setDebouncedRequest({
@@ -17590,8 +17979,54 @@ var App = () => {
     }
     sendTranslateRequest(debouncedRequest);
   }, [debouncedRequest, isSocketOpen]);
+  import_react3.useEffect(() => {
+    if (!selectedOutputWords.length) {
+      setWordDefinitions([]);
+      setIsDefinitionLoading(false);
+      latestDefinitionsRequestIdRef.current = "";
+      lastDefinitionRequestSignatureRef.current = "";
+      return;
+    }
+    const uniqueWords = Array.from(new Set(selectedOutputWords));
+    const cachedDefinitions = getCachedDefinitions(uniqueWords);
+    setWordDefinitions(cachedDefinitions);
+    const missingWords = getMissingDefinitionWords(uniqueWords);
+    if (!missingWords.length) {
+      setIsDefinitionLoading(false);
+      latestDefinitionsRequestIdRef.current = "";
+      lastDefinitionRequestSignatureRef.current = "";
+      return;
+    }
+    if (!isSocketOpen) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      sendDefinitionsRequest(missingWords[0]);
+    }, 200);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [selectedOutputWords, isSocketOpen, selectedModel, targetLanguage]);
+  const definitionByWord = new Map(wordDefinitions.map((entry) => [normalizeDefinitionWord(entry.word), entry.definition]));
+  const transliterationByWord = new Map;
+  outputWords.filter(({ punctuation }) => !punctuation).forEach(({ word, literal }) => {
+    const normalizedWord = normalizeDefinitionWord(word);
+    const transliterationKey = normalizedWord || word;
+    if (transliterationByWord.has(transliterationKey)) {
+      return;
+    }
+    if (literal) {
+      transliterationByWord.set(transliterationKey, literal);
+    }
+  });
   return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("main", {
     children: [
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("img", {
+        src: "piggo.svg",
+        alt: "",
+        "aria-hidden": "true",
+        className: "title-icon fade-in"
+      }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("h1", {
         children: "Piggo Translate"
       }, undefined, false, undefined, this),
@@ -17600,48 +18035,76 @@ var App = () => {
         "aria-label": "Translator workspace",
         children: [
           !isSocketOpen ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            className: "pane-stack-connection-dot long-fade-in",
+            className: "pane-stack-connection-dot fade-in",
             "aria-hidden": "true"
           }, undefined, false, undefined, this) : null,
           /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
             id: "input-pane-title",
             title: "Input",
             showHeader: false,
-            className: "pane-fade-in",
+            className: "fade-in",
             placeholder: "",
             ariaLabel: "Text to translate",
             value: inputText,
             autoFocus: true,
             textareaRef: inputTextareaRef,
             onChange: setInputText,
-            readOnly: false
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
-            id: "output-pane-title",
-            title: "Translated Output",
-            showHeader: false,
-            className: hasInputText ? undefined : "pane-transparent",
-            placeholder: "",
-            ariaLabel: "Translated text",
-            value: hasInputText ? outputText : "",
-            autoFocus: false,
-            footer: hasInputText ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Transliteration, {
-              value: outputTransliteration,
-              isVisible: isTransliterationVisible,
-              onToggle: () => setIsTransliterationVisible((value) => !value)
+            afterTextarea: hasInputText && isSpinnerVisible ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+              className: "spinner pane-spinner",
+              "aria-hidden": "true"
             }, undefined, false, undefined, this) : null,
             readOnly: false
           }, undefined, false, undefined, this),
-          hasInputText && isSpinnerVisible ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            className: "spinner pane-stack-spinner",
-            "aria-hidden": "true"
-          }, undefined, false, undefined, this) : null
+          hasOutputWords ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
+            id: "output-pane-title",
+            title: "Translated Output",
+            showHeader: false,
+            placeholder: "",
+            ariaLabel: "Translated text",
+            value: joinOutputTokens(outputWords, targetLanguage, "word"),
+            selectionTokens: outputWords.map((token) => ({
+              value: token.word,
+              selectionWord: token.word,
+              selectable: !token.punctuation
+            })),
+            selectionWordJoiner: isSpaceSeparatedLanguage(targetLanguage) ? " " : "",
+            autoFocus: false,
+            animateOnMount: true,
+            footer: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Transliteration, {
+              value: joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true }),
+              isVisible: isTransliterationVisible,
+              onToggle: () => setIsTransliterationVisible((value) => !value)
+            }, undefined, false, undefined, this),
+            readOnly: true,
+            enableTokenSelection: true,
+            onSelectionChange: (selectionWords) => {
+              setSelectedOutputWords(selectionWords);
+            }
+          }, undefined, false, undefined, this) : null,
+          selectedOutputWords.map((word, index) => {
+            const normalizedWord = normalizeDefinitionWord(word);
+            const definition = definitionByWord.get(normalizedWord) || "";
+            const transliteration = transliterationByWord.get(normalizedWord || word) || "";
+            const wordWithTransliteration = transliteration ? `${word} (${transliteration})` : word;
+            const paneValue = definition ? `${wordWithTransliteration} — ${definition}` : wordWithTransliteration;
+            return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(TextPane, {
+              id: `definition-pane-${index}-title`,
+              title: "",
+              showHeader: false,
+              className: "pane-definition fade-in",
+              placeholder: "",
+              ariaLabel: `Definition for ${word}`,
+              value: paneValue,
+              autoFocus: false,
+              readOnly: true
+            }, `${word}-${index}`, false, undefined, this);
+          })
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.1.3"
+        children: "v0.1.4"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
