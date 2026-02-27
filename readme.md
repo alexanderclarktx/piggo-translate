@@ -1,6 +1,6 @@
 <div align="center">
 
-  __Piggo Translate__ is a tool for translation and learning.
+  🐷📖 __Piggo Translate__ is a tool for translation and learning.
 </div>
 
 
