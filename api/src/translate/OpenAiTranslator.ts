@@ -29,6 +29,11 @@ type TranslationStructuredOutput = {
   transliteration: string[]
 }
 
+type TranslationLiteralPair = {
+  word: string
+  literal: string
+}
+
 type DefinitionsStructuredOutput = {
   definitions: TranslateWordDefinition[]
 }
@@ -250,43 +255,38 @@ const parseStructuredTranslation = (rawText: string) => {
     throw new Error("OpenAI returned invalid structured JSON")
   }
 
-  const words =
-    parsed &&
-      typeof parsed === "object" &&
-      "words" in parsed &&
-      Array.isArray(parsed.words)
-      ? parsed.words.filter((value): value is string => typeof value === "string")
-        .map((value) => value.trim())
-        .filter(Boolean)
-      : []
-  const transliteration =
-    parsed &&
-      typeof parsed === "object" &&
-      "transliteration" in parsed &&
-      Array.isArray(parsed.transliteration)
-      ? parsed.transliteration
-        .filter((value): value is string => typeof value === "string")
-        .map((value) => value.trim())
-        .filter(Boolean)
-      : []
+  const literalPairs = normalizeTranslationLiteralPairs(parsed)
 
-  if (!transliteration.length) {
-    throw new Error("OpenAI structured response missing 'transliteration'")
+  if (!literalPairs.length) {
+    throw new Error("OpenAI structured response missing translation literal pairs")
   }
 
-  if (!words.length) {
-    throw new Error("OpenAI structured response missing 'words'")
-  }
-
-  if (transliteration.length !== words.length) {
-    console.error("transliteration length did not match words length", { transliteration, words })
-    // throw new Error("OpenAI structured response must include one transliteration item per word")
-  }
+  const words = literalPairs.map((item) => item.word)
+  const transliteration = literalPairs.map((item) => item.literal)
 
   return {
     words,
     transliteration
   } satisfies TranslationStructuredOutput
+}
+
+const normalizeTranslationLiteralPairs = (parsed: unknown): TranslationLiteralPair[] => {
+  const arrayCandidate = Array.isArray(parsed)
+    ? parsed
+    : parsed &&
+        typeof parsed === "object" &&
+        "pairs" in parsed &&
+        Array.isArray(parsed.pairs)
+      ? parsed.pairs
+      : []
+
+  return arrayCandidate
+    .filter((value): value is { word?: unknown, literal?: unknown } => !!value && typeof value === "object")
+    .map((value) => ({
+      word: typeof value.word === "string" ? value.word.trim() : "",
+      literal: typeof value.literal === "string" ? value.literal.trim() : ""
+    }))
+    .filter((value) => !!value.word && !!value.literal)
 }
 
 const getResponseTextFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
@@ -303,14 +303,13 @@ const getResponseTextFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
 const buildTranslationPrompt = (text: string, targetLanguage: string) => {
   return (
     `Translate the following text to ${targetLanguage}.\n` +
-    "Return only a valid JSON object with exactly these keys:\n" +
-    `{"words":["..."],"transliteration":["..."]}\n` +
-    "The words array must contain one translated word per item.\n" +
+    "Return only a valid JSON array with this shape:\n" +
+    `[{"word":"...","literal":"..."}]\n` +
+    "Each array item must represent one translated word and its pronunciation.\n" +
     "Attach punctuation to the nearest word so joining words with spaces reads naturally.\n" +
     "For Chinese output, each item must be a complete Chinese word (multi-character words are allowed and expected).\n" +
-    "Do not include spaces or empty strings as array items.\n" +
-    "The transliteration array must include one pronunciation item for each output word, in the same order.\n" +
-    "Each transliteration item must use the source input's alphabet/script (for Chinese, use pinyin).\n" +
+    "Do not include empty strings.\n" +
+    "The literal value must use the source input's alphabet/script (for Chinese, use pinyin).\n" +
     "Do not include markdown, code fences, or explanations.\n\n" +
     text
   )
