@@ -1,7 +1,7 @@
 import { MutableRefObject, ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react"
 
-const textPaneAnimationMinIntervalMs = 10
-const textPaneAnimationMaxIntervalMs = 110
+const textPaneAnimationMinIntervalMs = 15
+const textPaneAnimationMaxIntervalMs = 100
 const textPaneAnimationFastThreshold = 24
 const selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu
 const selectionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
