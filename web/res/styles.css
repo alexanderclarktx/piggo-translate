@@ -432,7 +432,13 @@ main {
 
 .output-pane-text-content-selectable,
 .definition-pane-text-content-selectable {
-  cursor: default
+  cursor: default;
+
+  -webkit-user-select: none; /* iOS Safari */
+  user-select: none;
+
+  -webkit-touch-callout: none; /* disables the iOS copy/paste callout */
+  -webkit-tap-highlight-color: transparent; /* removes tap flash */
 }
 
 .definition-pane-text-content-selectable {

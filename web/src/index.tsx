@@ -1,6 +1,6 @@
 import {
-  DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration, normalizeDefinition,
-  Cache, Client, RequestSnapshot, isLocal, isMobile
+  DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
+  normalizeDefinition, Cache, Client, RequestSnapshot, isLocal, isMobile
 } from "@template/web"
 import { Model, WordDefinition, WordToken } from "@template/core"
 import { useEffect, useRef, useState } from "react"
@@ -507,7 +507,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.2.3
+          v0.2.4
         </span>
       )}
     </main>
