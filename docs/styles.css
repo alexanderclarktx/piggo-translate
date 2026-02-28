@@ -44,6 +44,7 @@ body {
   width: 2.8rem;
   height: 2.8rem;
   user-select: none;
+  margin-bottom: -2px;
 }
 
 @keyframes title-fade-in {
