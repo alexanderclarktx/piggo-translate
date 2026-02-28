@@ -18170,15 +18170,12 @@ var App = () => {
       return;
     const updatePaneStackMarginTop = () => {
       const minimumGapFromHeader = 16;
-      const minimumGapFromViewportBottom = 16;
       const headerBottom = headerSection.getBoundingClientRect().bottom;
       const paneStackHeight = paneStack.getBoundingClientRect().height;
       const centeredTop = Math.max((window.innerHeight - paneStackHeight) / 2, 0);
       const targetTop = Math.max(centeredTop, headerBottom + minimumGapFromHeader);
       const marginTop = Math.max(targetTop - headerBottom - 40, 0);
       paneStack.style.marginTop = `${marginTop}px`;
-      const paneStackTop = paneStack.getBoundingClientRect().top;
-      console.log("Updated pane stack margin top:", marginTop, "px");
     };
     const resizeObserver = new ResizeObserver(() => {
       updatePaneStackMarginTop();
