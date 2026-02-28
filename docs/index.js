@@ -17405,6 +17405,16 @@ var OutputPane = ({
   const [isCopySelected, setIsCopySelected] = import_react3.useState(false);
   const copySelectedTimeoutRef = import_react3.useRef(null);
   const paneClassName = ["output-pane", className].filter(Boolean).join(" ");
+  const isEditableActiveElement = () => {
+    const activeElement = document.activeElement;
+    if (!(activeElement instanceof HTMLElement)) {
+      return false;
+    }
+    if (activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement) {
+      return !activeElement.readOnly && !activeElement.disabled;
+    }
+    return activeElement.isContentEditable;
+  };
   const normalizedSelectionTokens = selectionTokens && selectionTokens.length ? selectionTokens : selectionWords && selectionWords.length ? selectionWords.map((tokenValue) => {
     const selectionWord = getSelectionWord(tokenValue);
     return {
@@ -17560,7 +17570,9 @@ var OutputPane = ({
       return;
     }
     const selection = window.getSelection();
-    selection?.removeAllRanges();
+    if (selection && !isEditableActiveElement()) {
+      selection.removeAllRanges();
+    }
     const contentElement = textContentRef.current;
     if (contentElement) {
       const tokenElements = Array.from(contentElement.querySelectorAll(".output-pane-text-token"));
@@ -17735,7 +17747,7 @@ var TargetLanguageDropdown = ({ options, targetLanguage, onSelect }) => {
             "aria-selected": false,
             className: "input-pane-target-language-option",
             "data-selected": "false",
-            onClick: () => {
+            onPointerDown: () => {
               setIsDismissed(true);
               onSelect(option.value);
             },
@@ -18125,6 +18137,10 @@ var isEditableElement = (element) => {
   }
   return element.isContentEditable;
 };
+var getAutoDefinitionWords = (tokens) => {
+  const selectableWords = tokens.filter(({ punctuation }) => !punctuation).map(({ word }) => word).filter((word) => !!normalizeDefinition(word));
+  return selectableWords.length === 1 ? selectableWords : [];
+};
 var App = () => {
   const [inputText, setInputText] = import_react6.useState("");
   const [outputWords, setOutputWords] = import_react6.useState([]);
@@ -18198,12 +18214,15 @@ var App = () => {
       onLatestRequestChange: setLatestRequestSnapshot,
       onTranslateSuccess: (words) => {
         const selection = window.getSelection();
-        if (selection) {
+        const activeElement = document.activeElement;
+        const shouldClearSelection = !isEditableElement(activeElement);
+        const autoDefinitionWords = getAutoDefinitionWords(words);
+        if (selection && shouldClearSelection) {
           selection.removeAllRanges();
         }
         setOutputWords(words);
         definitionContextRef.current = joinOutputTokens(words, targetLanguageRef.current, "word");
-        setSelectedOutputWords([]);
+        setSelectedOutputWords(autoDefinitionWords);
         setWordDefinitions([]);
         setIsDefinitionLoading(false);
         client.clearDefinitionRequestState();
@@ -18265,6 +18284,10 @@ var App = () => {
       textarea.focus();
       if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.altKey || event.metaKey)
         return;
+      if (event.key === "Tab") {
+        event.preventDefault();
+        return;
+      }
       const activeElement = document.activeElement;
       if (activeElement === textarea)
         return;
@@ -18309,7 +18332,7 @@ var App = () => {
         targetLanguage,
         model: selectedModel
       });
-    }, isMobile() ? 700 : 400);
+    }, isMobile() ? 1000 : 400);
     return () => {
       window.clearTimeout(timeoutId);
     };
@@ -18478,7 +18501,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.2.5"
+        children: "v0.2.6"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);

@@ -472,14 +472,15 @@ main {
   display: inline;
   opacity: 0;
   transition: opacity 400ms ease;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .definition-pane-value-fade-in.is-visible {
   opacity: 1;
 }
 
-.output-pane-text-content-selectable,
-.definition-pane-text-content-selectable {
+.output-pane-text-content-selectable {
   cursor: default;
 
   -webkit-user-select: none; /* iOS Safari */
@@ -492,24 +493,30 @@ main {
 .definition-pane-text-content-selectable {
   user-select: text;
   -webkit-user-select: text;
+  -webkit-touch-callout: default;
+  -webkit-tap-highlight-color: initial;
 }
 
-.output-pane-text-content-selectable ::selection,
-.definition-pane-text-content-selectable ::selection {
+.definition-pane-text-content-selectable,
+.definition-pane-text-content-selectable * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.output-pane-text-content-selectable ::selection {
   background: transparent;
 }
 
 .output-pane-text-token-selectable:hover {
-  /* background: rgba(60, 60, 60, 0.1); */
-  border-bottom: 1px solid rgba(60, 60, 60, 0.5);
+  background: rgba(60, 60, 60, 0.1);
+  /* border-bottom: 1px solid rgba(60, 60, 60, 0.5); */
 }
 
 .output-pane-text-token-selectable.output-pane-text-token-selected:hover {
   background: transparent;
 }
 
-.output-pane-text-content-selectable:hover ::selection,
-.definition-pane-text-content-selectable:hover ::selection {
+.output-pane-text-content-selectable:hover ::selection {
   background: transparent;
 }
 
@@ -548,7 +555,7 @@ main {
   border: 0;
   background: rgba(183, 221, 255, 0.2);
   color: #3c3519;
-  padding: 0.8rem;
+  padding: 0.6rem;
   border-radius: 0.5rem;
   overflow: hidden;
   transition: background-color 500ms ease, border-color 500ms ease, padding 500ms ease;

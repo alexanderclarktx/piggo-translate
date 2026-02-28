@@ -480,8 +480,7 @@ main {
   opacity: 1;
 }
 
-.output-pane-text-content-selectable,
-.definition-pane-text-content-selectable {
+.output-pane-text-content-selectable {
   cursor: default;
 
   -webkit-user-select: none; /* iOS Safari */
@@ -494,10 +493,17 @@ main {
 .definition-pane-text-content-selectable {
   user-select: text;
   -webkit-user-select: text;
+  -webkit-touch-callout: default;
+  -webkit-tap-highlight-color: initial;
 }
 
-.output-pane-text-content-selectable ::selection,
-.definition-pane-text-content-selectable ::selection {
+.definition-pane-text-content-selectable,
+.definition-pane-text-content-selectable * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.output-pane-text-content-selectable ::selection {
   background: transparent;
 }
 
@@ -510,8 +516,7 @@ main {
   background: transparent;
 }
 
-.output-pane-text-content-selectable:hover ::selection,
-.definition-pane-text-content-selectable:hover ::selection {
+.output-pane-text-content-selectable:hover ::selection {
   background: transparent;
 }
 
