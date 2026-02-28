@@ -429,14 +429,15 @@ main {
 }
 
 .pane-text-token {
+  user-select: none;
   border-radius: 0.2rem;
   cursor: default;
   transition: background-color 120ms ease, color 120ms ease;
 }
 
 .pane-text-content {
+  user-select: none;
   box-sizing: border-box;
-  /* width: 99%; */
   min-height: 0;
   border: 0;
   background: rgba(255, 255, 255, 0.3);
@@ -452,7 +453,6 @@ main {
 }
 
 .pane-text-content-selectable {
-  user-select: text;
   cursor: default
 }
 

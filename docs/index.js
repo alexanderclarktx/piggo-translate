@@ -17466,13 +17466,6 @@ var TextPane = ({
         className: "pane-text-content pane-text-content-selectable",
         role: "textbox",
         "aria-label": ariaLabel,
-        onMouseDown: shouldRenderTokenizedOutput ? (event) => {
-          const tokenElement = event.target.closest(".pane-text-token");
-          const isWordToken = !!tokenElement && !!tokenElement.dataset.selectionWord;
-          if (!isWordToken) {
-            clearSelectableOutputSelection();
-          }
-        } : undefined,
         children: shouldRenderTokenizedOutput ? selectableTokens.map((token, tokenIndex) => {
           const tokenValue = token.value;
           const isWhitespaceToken = !tokenValue.trim();
@@ -17528,7 +17521,7 @@ var TextPane = ({
       }, undefined, false, undefined, this),
       afterTextarea,
       footer ? footer : null,
-      enableCopyButton ? /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
+      enableCopyButton && !isMobile() ? /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
         type: "button",
         className: `pane-copy-button${didCopy ? " pane-copy-button-copied" : ""}${isCopySelected ? " pane-copy-button-selected" : ""}`,
         "aria-label": "Copy output text",
