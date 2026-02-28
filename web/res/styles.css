@@ -434,6 +434,11 @@ main {
   cursor: default
 }
 
+.definition-pane-text-content-selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 .output-pane-text-content-selectable ::selection,
 .definition-pane-text-content-selectable ::selection {
   background: transparent;
