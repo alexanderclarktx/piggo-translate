@@ -501,7 +501,8 @@ main {
 }
 
 .output-pane-text-token-selectable:hover {
-  background: rgba(60, 60, 60, 0.1);
+  /* background: rgba(60, 60, 60, 0.1); */
+  border-bottom: 1px solid rgba(60, 60, 60, 0.5);
 }
 
 .output-pane-text-token-selectable.output-pane-text-token-selected:hover {

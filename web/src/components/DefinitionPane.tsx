@@ -125,7 +125,7 @@ const DefinitionPane = ({
         role="textbox"
         aria-label={ariaLabel}
       >
-        ${prefixText}
+        {prefixText}
         <span
           key={fadeVersion}
           className={`definition-pane-value-fade-in${isFadeVisible ? " is-visible" : ""}`}
