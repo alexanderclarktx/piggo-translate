@@ -1,5 +1,5 @@
 const textPaneAnimationMinIntervalMs = 15
-const textPaneAnimationMaxIntervalMs = 100
+const textPaneAnimationMaxIntervalMs = 90
 const textPaneAnimationFastThreshold = 24
 
 export const selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu

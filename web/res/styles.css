@@ -130,7 +130,7 @@ main {
 }
 
 .pane-stack .output-pane-text-content,
-.pane-stack .definition-pane-text-content {
+.pane-stack {
   transition: height 500ms ease;
 }
 
@@ -274,7 +274,7 @@ main {
   cursor: initial;
   position: relative;
   /* transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease; */
-  transition: all 400ms ease;
+  /* transition: all 200ms ease; */
 }
 
 .output-pane {
@@ -288,7 +288,7 @@ main {
   cursor: initial;
   position: relative;
   /* transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease; */
-  transition: all 400ms ease;
+  /* transition: all 200ms ease; */
 }
 
 .definition-pane {
@@ -302,7 +302,8 @@ main {
   cursor: initial;
   position: relative;
   /* transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease; */
-  transition: all 400ms ease;
+  /* transition: all 200ms ease; */
+  transition: all 0ms ease;
 }
 
 .output-pane-copy-button {
@@ -438,7 +439,23 @@ main {
   transition: background-color 120ms ease, color 120ms ease;
 }
 
-.output-pane-text-content,
+.output-pane-text-content {
+  user-select: none;
+  box-sizing: border-box;
+  min-height: 0;
+  border: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 1rem;
+  font: inherit;
+  color: inherit;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+  transition: all 200ms ease;
+}
+
 .definition-pane-text-content {
   user-select: none;
   box-sizing: border-box;
@@ -453,8 +470,7 @@ main {
   overflow-wrap: anywhere;
   word-break: break-word;
   text-align: center;
-  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease,
-    border-color 500ms ease, padding 500ms ease;
+  transition: all 200ms ease;
 }
 
 .output-pane-text-content-selectable,
