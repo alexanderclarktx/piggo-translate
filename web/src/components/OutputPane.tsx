@@ -36,6 +36,19 @@ const OutputPane = ({
   const [isCopySelected, setIsCopySelected] = useState(false)
   const copySelectedTimeoutRef = useRef<number | null>(null)
   const paneClassName = ["output-pane", className].filter(Boolean).join(" ")
+  const isEditableActiveElement = () => {
+    const activeElement = document.activeElement
+
+    if (!(activeElement instanceof HTMLElement)) {
+      return false
+    }
+
+    if (activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement) {
+      return !activeElement.readOnly && !activeElement.disabled
+    }
+
+    return activeElement.isContentEditable
+  }
 
   const normalizedSelectionTokens =
     selectionTokens && selectionTokens.length
@@ -263,7 +276,9 @@ const OutputPane = ({
     }
 
     const selection = window.getSelection()
-    selection?.removeAllRanges()
+    if (selection && !isEditableActiveElement()) {
+      selection.removeAllRanges()
+    }
 
     const contentElement = textContentRef.current
 

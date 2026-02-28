@@ -170,7 +170,10 @@ const App = () => {
       onLatestRequestChange: setLatestRequestSnapshot,
       onTranslateSuccess: (words) => {
         const selection = window.getSelection()
-        if (selection) {
+        const activeElement = document.activeElement
+        const shouldClearSelection = !isEditableElement(activeElement)
+
+        if (selection && shouldClearSelection) {
           selection.removeAllRanges()
         }
 
@@ -312,7 +315,7 @@ const App = () => {
         targetLanguage,
         model: selectedModel
       })
-    }, isMobile() ? 700 : 400)
+    }, isMobile() ? 1000 : 400)
 
     return () => {
       window.clearTimeout(timeoutId)
