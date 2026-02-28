@@ -285,6 +285,14 @@ const OutputPane = ({
   }
 
   const selectToken = (tokenElement: HTMLSpanElement) => {
+    const tokenSelectionWord =
+      tokenElement.dataset.selectionWord || getSelectionWord(tokenElement.textContent || "")
+
+    if (tokenSelectionWord && tokenSelectionWord === lastSelectionRef.current) {
+      clearSelectableOutputSelection()
+      return
+    }
+
     const selection = window.getSelection()
 
     if (!selection) {
