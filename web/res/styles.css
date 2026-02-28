@@ -429,6 +429,7 @@ main {
 }
 
 .pane-text-token {
+  user-select: none;
   border-radius: 0.2rem;
   cursor: default;
   transition: background-color 120ms ease, color 120ms ease;
