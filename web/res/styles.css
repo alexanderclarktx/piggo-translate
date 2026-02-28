@@ -41,8 +41,8 @@ body {
 
 .title-icon {
   /* justify-self: center; */
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.8rem;
+  height: 2.8rem;
   user-select: none;
 }
 
@@ -121,14 +121,15 @@ main {
   z-index: 2;
 }
 
-.pane-stack .pane-textarea {
+.pane-stack .input-pane-textarea {
   min-height: 0;
   overflow: hidden;
   resize: none;
   transition: height 500ms ease;
 }
 
-.pane-stack .pane-text-content {
+.pane-stack .output-pane-text-content,
+.pane-stack .definition-pane-text-content {
   transition: height 500ms ease;
 }
 
@@ -260,7 +261,9 @@ main {
   transition: transform 220ms ease, opacity 220ms ease, font-weight 120ms ease, visibility 0s linear 220ms;
 }
 
-.pane {
+.input-pane,
+.output-pane,
+.definition-pane {
   width: 100%;
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(16, 24, 32, 0.12);
@@ -270,10 +273,11 @@ main {
   max-width: 600px;
   cursor: initial;
   position: relative;
-  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease,
+    border-color 500ms ease, padding 500ms ease;
 }
 
-.pane-copy-button {
+.output-pane-copy-button {
   position: absolute;
   top: 0.55rem;
   right: 0.55rem;
@@ -295,8 +299,8 @@ main {
   transition: opacity 300ms ease, transform 300ms ease, color 120ms ease, visibility 0s linear 300ms;
 }
 
-.pane:hover .pane-copy-button,
-.pane:focus-within .pane-copy-button {
+.output-pane:hover .output-pane-copy-button,
+.output-pane:focus-within .output-pane-copy-button {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -304,7 +308,7 @@ main {
   transition: opacity 300ms ease, transform 300ms ease, background-color 120ms ease, color 300ms ease, visibility 0s linear 0s;
 }
 
-.pane-copy-button svg {
+.output-pane-copy-button svg {
   width: 1.2rem;
   height: 1.2rem;
   fill: none;
@@ -316,25 +320,25 @@ main {
   transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* .pane-copy-button:hover {
+/* .output-pane-copy-button:hover {
   background: transparent;
   color: rgba(16, 24, 32, 0.95);
 } */
 
-.pane-copy-button:hover:not(.pane-copy-button-selected) svg {
+.output-pane-copy-button:hover:not(.output-pane-copy-button-selected) svg {
   transform: scale(1.22);
 }
 
-.pane-copy-button:active {
+.output-pane-copy-button:active {
   background: transparent;
   transform: translateY(0) scale(0.94);
 }
 
-.pane-copy-button.pane-copy-button-selected svg {
+.output-pane-copy-button.output-pane-copy-button-selected svg {
   transform: scale(1);
 }
 
-.pane-copy-button:focus-visible {
+.output-pane-copy-button:focus-visible {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -342,12 +346,12 @@ main {
   outline-offset: 2px;
 }
 
-.pane-copy-button.pane-copy-button-copied {
+.output-pane-copy-button.output-pane-copy-button-copied {
   background: transparent;
   /* color: rgba(16, 24, 32, 0.95); */
 }
 
-.pane-spinner {
+.input-pane-spinner {
   position: absolute;
   right: 0.75rem;
   bottom: 0.75rem;
@@ -360,35 +364,15 @@ main {
   animation: title-fade-in 500ms ease-out both;
 }
 
-.pane-no-header {
-  display: flex;
-}
-
-.pane-transparent {
-  background: transparent !important;
-  border-color: transparent !important;
-}
-
-.pane-transparent .pane-textarea[readonly] {
-  background: transparent;
-}
-
-.pane-transparent .pane-text-content {
-  background: transparent;
-}
-
-.pane-transparent .pane-footer {
-  background: transparent;
-  border-top-color: transparent;
-}
-
-.pane-header {
+.input-pane-header,
+.output-pane-header,
+.definition-pane-header {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid rgba(16, 24, 32, 0.12);
   /* background: rgba(255, 255, 255, 0.6); */
 }
 
-.pane-textarea {
+.input-pane-textarea {
   box-sizing: border-box;
   width: 100%;
   min-height: 0;
@@ -406,36 +390,28 @@ main {
   overflow: hidden;
   cursor: default;
   text-align: center;
-  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease,
+    border-color 500ms ease, padding 500ms ease;
 }
 
-.pane-definition .pane-textarea {
+.definition-pane .definition-pane-text-content {
   text-align: left;
   font-size: 1.3rem;
 }
 
-.pane-definition .pane-text-content {
-  text-align: left;
-  font-size: 1.3rem;
-}
-
-.pane-textarea::placeholder {
+.input-pane-textarea::placeholder {
   color: #5c6672;
 }
 
-.pane-textarea[readonly] {
-  background: rgba(255, 255, 255, 1);
-  pointer-events: none;
-}
-
-.pane-text-token {
+.output-pane-text-token {
   user-select: none;
   border-radius: 0.2rem;
   cursor: default;
   transition: background-color 120ms ease, color 120ms ease;
 }
 
-.pane-text-content {
+.output-pane-text-content,
+.definition-pane-text-content {
   user-select: none;
   box-sizing: border-box;
   min-height: 0;
@@ -449,49 +425,53 @@ main {
   overflow-wrap: anywhere;
   word-break: break-word;
   text-align: center;
-  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease, border-color 500ms ease, padding 500ms ease;
+  transition: height 500ms ease, transform 500ms ease, background-color 500ms ease,
+    border-color 500ms ease, padding 500ms ease;
 }
 
-.pane-text-content-selectable {
+.output-pane-text-content-selectable,
+.definition-pane-text-content-selectable {
   cursor: default
 }
 
-.pane-text-content-selectable ::selection {
+.output-pane-text-content-selectable ::selection,
+.definition-pane-text-content-selectable ::selection {
   background: transparent;
 }
 
-.pane-text-token-selectable:hover {
+.output-pane-text-token-selectable:hover {
   background: rgba(60, 60, 60, 0.1);
 }
 
-.pane-text-token-selectable.pane-text-token-selected:hover {
+.output-pane-text-token-selectable.output-pane-text-token-selected:hover {
   background: transparent;
 }
 
-.pane-text-content-selectable:hover ::selection {
+.output-pane-text-content-selectable:hover ::selection,
+.definition-pane-text-content-selectable:hover ::selection {
   background: transparent;
 }
 
-.pane-text-token-nonselectable {
+.output-pane-text-token-nonselectable {
   pointer-events: none;
 }
 
-.pane-text-token:focus-visible {
+.output-pane-text-token:focus-visible {
   outline: 2px solid rgba(60, 60, 60, 0.32);
   outline-offset: 1px;
 }
 
-.pane-text-token-selected {
+.output-pane-text-token-selected {
   border-radius: 0;
   font-weight: bold;
 }
 
-.pane-text-token-selected-start {
+.output-pane-text-token-selected-start {
   border-top-left-radius: 0.2rem;
   border-bottom-left-radius: 0.2rem;
 }
 
-.pane-text-token-selected-end {
+.output-pane-text-token-selected-end {
   border-top-right-radius: 0.2rem;
   border-bottom-right-radius: 0.2rem;
 }
@@ -584,13 +564,16 @@ main {
 
 @media (prefers-reduced-motion: reduce) {
 
-  .pane,
-  .pane-stack .pane,
-  .pane-stack .pane-textarea,
+  .input-pane,
+  .output-pane,
+  .definition-pane,
+  .pane-stack .input-pane-textarea,
+  .pane-stack .output-pane-text-content,
+  .pane-stack .definition-pane-text-content,
   .pane-footer,
   .transliteration-collapsed-label,
   .transliteration-panel,
-  .pane-copy-button {
+  .output-pane-copy-button {
     transition: none;
   }
 }
@@ -631,7 +614,7 @@ main {
     font-size: 1.2rem;
   }
 
-  .pane-definition .pane-text-content {
+  .definition-pane .definition-pane-text-content {
     font-size: 1rem;
   }
 
@@ -644,14 +627,15 @@ main {
     padding: 0;
   }
 
-  .pane-textarea {
+  .input-pane-textarea {
     padding-left: 1.2rem;
     padding-right: 1.2rem;
     padding-top: 0.6rem;
     padding-bottom: 0.6rem;
   }
 
-  .pane-text-content {
+  .output-pane-text-content,
+  .definition-pane-text-content {
     padding: 0.7rem;
   }
 }
