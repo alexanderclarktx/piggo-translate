@@ -509,14 +509,6 @@ const TextPane = ({
           className="pane-text-content pane-text-content-selectable"
           role="textbox"
           aria-label={ariaLabel}
-          onMouseDown={shouldRenderTokenizedOutput ? (event) => {
-            const tokenElement = (event.target as Element).closest<HTMLSpanElement>(".pane-text-token")
-            const isWordToken = !!tokenElement && !!tokenElement.dataset.selectionWord
-
-            if (!isWordToken) {
-              clearSelectableOutputSelection()
-            }
-          } : undefined}
         >
           {shouldRenderTokenizedOutput
             ? selectableTokens.map((token, tokenIndex) => {
