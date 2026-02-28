@@ -1,5 +1,5 @@
 import { MutableRefObject, ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react"
-import { isMobile } from "web/main"
+import { isMobile } from "@template/web"
 
 const textPaneAnimationMinIntervalMs = 15
 const textPaneAnimationMaxIntervalMs = 100
