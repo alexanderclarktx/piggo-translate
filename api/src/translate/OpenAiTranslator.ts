@@ -54,7 +54,7 @@ export const OpenAiTranslator = (): Translator => ({
 
     return parseStructuredTranslation(rawText)
   },
-  getDefinitions: async (word, targetLanguage) => {
+  getDefinitions: async (word, targetLanguage, context) => {
     const apiKey = process.env.OPENAI_API_KEY
 
     if (!apiKey) {
@@ -63,7 +63,7 @@ export const OpenAiTranslator = (): Translator => ({
 
     const rawText = await runOpenAiRealtimeRequest(
       apiKey,
-      buildDefinitionPrompt(word, targetLanguage),
+      buildDefinitionPrompt(word, targetLanguage, context),
       "You write concise dictionary-style definitions. Return valid JSON only."
     )
 
@@ -309,13 +309,18 @@ const buildTranslationPrompt = (text: string, targetLanguage: string) => {
   )
 }
 
-const buildDefinitionPrompt = (word: string, targetLanguage: string) => {
+const buildDefinitionPrompt = (word: string, targetLanguage: string, context: string) => {
+  const formattedContext = context.trim()
+
   return (
-    `Write short English definitions for the word "${word}" (language is ${targetLanguage}).\n` +
+    `Write a short definition/explanation in english for the word "${word}" (language is ${targetLanguage}).\n` +
+    `Sentence context: ${JSON.stringify(formattedContext)}\n` +
     "Return only valid JSON with exactly this shape: {\"definition\":\"...\"}\n" +
     "Keep the definition under 30 words.\n" +
     "If the word is composed of multiple component words, briefly explain each component.\n" +
-    "Do not include the word itself in the definition!!\n" +
+    "Consider the grammatical rules of the language when analyzing the word and its components.\n" +
+    "Do not include the word itself!!\n" +
+    "Do not repeat the context!!\n" +
     "Do not include markdown or code fences.\n\n"
   )
 }

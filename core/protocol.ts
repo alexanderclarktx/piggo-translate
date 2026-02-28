@@ -23,6 +23,7 @@ type WsDefinitionsRequest = {
   type: "translate.definitions.request"
   requestId: string
   word: string
+  context: string
   targetLanguage: string
   model?: Model
 }

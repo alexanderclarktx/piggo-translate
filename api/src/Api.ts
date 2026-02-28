@@ -31,9 +31,7 @@ const normalizeTranslateInput = (
   }
 }
 
-const parseTranslateWsMessage = (
-  rawMessage: unknown
-): { error: string } | ({
+const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
   type: "translate.request"
   requestId: string
   text: string
@@ -43,6 +41,7 @@ const parseTranslateWsMessage = (
   type: "translate.definitions.request"
   requestId: string
   word: string
+  context: string
   targetLanguage: string
   model: Model
 }) => {
@@ -59,6 +58,7 @@ const parseTranslateWsMessage = (
     targetLanguage?: unknown
     model?: unknown
     word?: unknown
+    context?: unknown
   }
 
   if (
@@ -105,6 +105,7 @@ const parseTranslateWsMessage = (
   }
 
   const word = typeof message.word === "string" ? message.word.trim() : ""
+  const context = typeof message.context === "string" ? message.context.trim() : ""
   const normalizedTargetLanguage =
     typeof message.targetLanguage === "string" ? message.targetLanguage.trim() : ""
 
@@ -120,10 +121,17 @@ const parseTranslateWsMessage = (
     }
   }
 
+  if (!context) {
+    return {
+      error: "Websocket message must include a non-empty 'context' string"
+    }
+  }
+
   return {
     type: "translate.definitions.request",
     requestId: message.requestId.trim(),
     word,
+    context,
     targetLanguage: normalizedTargetLanguage,
     model: message.model === "anthropic" ? "anthropic" : "openai"
   }
@@ -147,10 +155,10 @@ export const createApiServer = () => {
     return translator.translate(text, targetLanguage)
   }
 
-  const getDefinitionsWithModel = async (model: Model, word: string, targetLanguage: string) => {
+  const getDefinitionsWithModel = async (model: Model, word: string, targetLanguage: string, context: string) => {
     const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
 
-    return translator.getDefinitions(word, targetLanguage)
+    return translator.getDefinitions(word, targetLanguage, context)
   }
 
   const server = Bun.serve({
@@ -239,7 +247,8 @@ export const createApiServer = () => {
           const definitions = await getDefinitionsWithModel(
             parsedMessage.model,
             parsedMessage.word,
-            parsedMessage.targetLanguage
+            parsedMessage.targetLanguage,
+            parsedMessage.context
           )
 
           ws.send(JSON.stringify({

@@ -107,6 +107,7 @@ const App = () => {
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingInputSelectionRef = useRef<{ start: number, end: number } | null>(null)
   const selectedOutputWordsRef = useRef<string[]>([])
+  const definitionContextRef = useRef("")
   const targetLanguageRef = useRef(targetLanguage)
   const selectedModelRef = useRef(selectedModel)
   const CacheRef = useRef(Cache())
@@ -178,6 +179,7 @@ const App = () => {
         }
 
         setOutputWords(words)
+        definitionContextRef.current = joinOutputTokens(words, targetLanguageRef.current, "word")
         setSelectedOutputWords([])
         setWordDefinitions([])
         setIsDefinitionLoading(false)
@@ -195,6 +197,7 @@ const App = () => {
         if (missingWords.length) {
           client.sendDefinitionsRequest({
             word: missingWords[0],
+            context: definitionContextRef.current,
             targetLanguage: targetLanguageRef.current,
             model: selectedModelRef.current
           })
@@ -359,6 +362,7 @@ const App = () => {
     setWordDefinitions(cachedDefinitions)
 
     const missingWords = CacheRef.current.getMissingDefinitionWords(uniqueWords)
+    const definitionContext = joinOutputTokens(outputWords, targetLanguage, "word")
 
     if (!missingWords.length) {
       setIsDefinitionLoading(false)
@@ -368,12 +372,14 @@ const App = () => {
 
     if (!isSocketOpen) return
 
+    definitionContextRef.current = definitionContext
     clientRef.current?.sendDefinitionsRequest({
       word: missingWords[0],
+      context: definitionContext,
       targetLanguage,
       model: selectedModel
     })
-  }, [selectedOutputWords, isSocketOpen, selectedModel, targetLanguage])
+  }, [outputWords, selectedOutputWords, isSocketOpen, selectedModel, targetLanguage])
 
   const definitionByWord = new Map(
     wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition])

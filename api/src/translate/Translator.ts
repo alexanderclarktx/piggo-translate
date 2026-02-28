@@ -4,5 +4,5 @@ export type Translator = {
   translate: (text: string, targetLanguage: string) => Promise<{
     words: WordToken[]
   }>
-  getDefinitions: (word: string, targetLanguage: string) => Promise<WordDefinition[]>
+  getDefinitions: (word: string, targetLanguage: string, context: string) => Promise<WordDefinition[]>
 }

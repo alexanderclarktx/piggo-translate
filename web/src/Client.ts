@@ -14,6 +14,7 @@ export type TranslateRequestInput = {
 
 export type DefinitionsRequestInput = {
   word: string
+  context: string
   targetLanguage: string
   model: Model
 }
@@ -50,8 +51,13 @@ const getRequestSignature = ({ text, targetLanguage, model }: { text: string, ta
   return `${model}::${normalizeText(text)}::${targetLanguage}`
 }
 
-const getDefinitionRequestSignature = (word: string, targetLanguage: string, model: Model) => {
-  return `${model}::${targetLanguage}::${normalizeDefinition(word)}`
+const getDefinitionRequestSignature = (
+  word: string,
+  context: string,
+  targetLanguage: string,
+  model: Model
+) => {
+  return `${model}::${targetLanguage}::${normalizeDefinition(word)}::${normalizeText(context)}`
 }
 
 export const Client = (options: ClientOptions): Client => {
@@ -126,13 +132,15 @@ export const Client = (options: ClientOptions): Client => {
 
   const sendDefinitionsRequest = (requestInput: DefinitionsRequestInput) => {
     const normalizedWord = normalizeDefinition(requestInput.word)
+    const normalizedContext = normalizeText(requestInput.context)
 
-    if (!normalizedWord || !socket || socket.readyState !== WebSocket.OPEN) {
+    if (!normalizedWord || !normalizedContext || !socket || socket.readyState !== WebSocket.OPEN) {
       return
     }
 
     const requestSignature = getDefinitionRequestSignature(
       normalizedWord,
+      normalizedContext,
       requestInput.targetLanguage,
       requestInput.model
     )
@@ -151,6 +159,7 @@ export const Client = (options: ClientOptions): Client => {
       type: "translate.definitions.request",
       requestId,
       word: normalizedWord,
+      context: normalizedContext,
       targetLanguage: requestInput.targetLanguage,
       model: requestInput.model
     }
