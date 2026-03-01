@@ -242,7 +242,6 @@ const App = () => {
     isTranslating &&
     !!latestRequestSnapshot.id &&
     normalizedInputText === latestRequestSnapshot.normalizedInputText
-  const isAudioBusy = isAudioLoading || isAudioPlaying
 
   useEffect(() => {
     const client = Client({
@@ -589,8 +588,8 @@ const App = () => {
             )}
             enableCopyButton
             copyValue={joinOutputTokens(outputWords, targetLanguage, "word")}
-            enableAudioButton
-            isAudioLoading={isAudioBusy}
+            enableAudioButton={!isAudioPlaying}
+            isAudioLoading={isAudioLoading}
             onAudioClick={() => {
               const outputText = joinOutputTokens(outputWords, targetLanguage, "word")
 
