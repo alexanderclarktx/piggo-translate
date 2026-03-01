@@ -34,6 +34,7 @@ body {
   margin: 0;
   padding: 0;
   user-select: none;
+  -webkit-user-select: none;
   color: white;
   transition: color 500ms ease, opacity 500ms ease;
   animation: fade-in-animation 500ms ease-out both;
