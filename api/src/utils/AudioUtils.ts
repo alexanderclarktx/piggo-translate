@@ -8,64 +8,14 @@ export const decodeBase64PcmChunksToWavBlob = (chunks: string[]) => {
   }
 
   const pcmAudio = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk, "base64")))
-  const boostedPcmAudio = boostPcm16Volume({ pcmAudio })
   const wavAudio = encodePcm16ToWav({
-    pcmAudio: boostedPcmAudio,
+    pcmAudio,
     sampleRate,
     channelCount,
     bitsPerSample
   })
 
   return new Blob([wavAudio], { type: "audio/wav" })
-}
-
-type BoostPcm16VolumeInput = {
-  pcmAudio: Buffer
-  maxBoostFactor?: number
-  targetPeakAmplitude?: number
-}
-
-const boostPcm16Volume = ({
-  pcmAudio,
-  maxBoostFactor = 1.8,
-  targetPeakAmplitude = 29490
-}: BoostPcm16VolumeInput) => {
-  if (pcmAudio.length < 2) {
-    return pcmAudio
-  }
-
-  let maxAbsoluteSample = 0
-
-  for (let offset = 0; offset + 1 < pcmAudio.length; offset += 2) {
-    const sample = pcmAudio.readInt16LE(offset)
-    const absoluteSample = Math.abs(sample)
-
-    if (absoluteSample > maxAbsoluteSample) {
-      maxAbsoluteSample = absoluteSample
-    }
-  }
-
-  if (!maxAbsoluteSample) {
-    return pcmAudio
-  }
-
-  const safeBoostFactor = targetPeakAmplitude / maxAbsoluteSample
-  const gain = Math.max(1, Math.min(maxBoostFactor, safeBoostFactor))
-
-  if (gain === 1) {
-    return pcmAudio
-  }
-
-  const boostedPcmAudio = Buffer.from(pcmAudio)
-
-  for (let offset = 0; offset + 1 < boostedPcmAudio.length; offset += 2) {
-    const sample = boostedPcmAudio.readInt16LE(offset)
-    const boostedSample = Math.round(sample * gain)
-    const clampedSample = Math.max(-32768, Math.min(32767, boostedSample))
-    boostedPcmAudio.writeInt16LE(clampedSample, offset)
-  }
-
-  return boostedPcmAudio
 }
 
 type EncodePcm16ToWavInput = {

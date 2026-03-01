@@ -30,7 +30,7 @@ const isSpaceSeparatedLanguage = (language: string) =>
 
 const noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/
 const noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/
-const audioPlaybackGain = 1.8
+const audioPlaybackGain = 3
 
 const joinOutputTokens = (
   tokens: WordToken[],
