@@ -408,11 +408,15 @@ const OutputPane = ({
                 onAudioClick?.()
               }}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-                <path d="M15 9.5a4 4 0 0 1 0 5" />
-                <path d="M18 7a8 8 0 0 1 0 10" />
-              </svg>
+              {isAudioLoading ? (
+                <span className="spinner output-pane-action-spinner" aria-hidden="true" />
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                  <path d="M15 9.5a4 4 0 0 1 0 5" />
+                  <path d="M18 7a8 8 0 0 1 0 10" />
+                </svg>
+              )}
             </button>
           ) : null}
           {enableCopyButton ? (

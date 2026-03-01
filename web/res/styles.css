@@ -389,6 +389,13 @@ main {
   transform: translateY(0) scale(1);
 }
 
+.output-pane-action-spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-color: rgba(16, 24, 32, 0.25);
+  border-top-color: rgba(16, 24, 32, 0.9);
+}
+
 .input-pane-spinner {
   position: absolute;
   right: 0.75rem;

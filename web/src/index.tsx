@@ -112,6 +112,7 @@ const App = () => {
   const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
   const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
   const [isAudioLoading, setIsAudioLoading] = useState(false)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = useState(false)
   const clientRef = useRef<Client | null>(null)
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -129,6 +130,8 @@ const App = () => {
   const pendingAudioRequestTextRef = useRef("")
 
   const clearAudioPlayback = () => {
+    setIsAudioPlaying(false)
+
     if (activeAudioRef.current) {
       activeAudioRef.current.pause()
       activeAudioRef.current.src = ""
@@ -162,7 +165,10 @@ const App = () => {
 
     const audio = new Audio(nextAudioSourceUrl)
     activeAudioRef.current = audio
+    setIsAudioPlaying(true)
     audio.onended = () => {
+      setIsAudioPlaying(false)
+
       if (activeAudioRef.current === audio) {
         activeAudioRef.current = null
       }
@@ -236,6 +242,7 @@ const App = () => {
     isTranslating &&
     !!latestRequestSnapshot.id &&
     normalizedInputText === latestRequestSnapshot.normalizedInputText
+  const isAudioBusy = isAudioLoading || isAudioPlaying
 
   useEffect(() => {
     const client = Client({
@@ -583,7 +590,7 @@ const App = () => {
             enableCopyButton
             copyValue={joinOutputTokens(outputWords, targetLanguage, "word")}
             enableAudioButton
-            isAudioLoading={isAudioLoading}
+            isAudioLoading={isAudioBusy}
             onAudioClick={() => {
               const outputText = joinOutputTokens(outputWords, targetLanguage, "word")
 
