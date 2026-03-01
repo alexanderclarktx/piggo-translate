@@ -18210,6 +18210,7 @@ var normalizeText3 = (text) => text.replace(/\s+/g, " ").trim();
 var isSpaceSeparatedLanguage = (language) => !language.toLowerCase().includes("chinese") && !language.toLowerCase().includes("japanese");
 var noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/;
 var noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/;
+var audioPlaybackGain = 3;
 var joinOutputTokens = (tokens, targetLanguage, tokenKey, options) => {
   const useSpaces = options?.forceSpaceSeparated || isSpaceSeparatedLanguage(targetLanguage);
   return tokens.reduce((result, token, tokenIndex) => {
@@ -18280,9 +18281,16 @@ var App = () => {
   const paneStackRef = import_react6.useRef(null);
   const audioSourceUrlRef = import_react6.useRef("");
   const activeAudioRef = import_react6.useRef(null);
+  const audioContextRef = import_react6.useRef(null);
+  const audioGainNodeRef = import_react6.useRef(null);
+  const activeAudioSourceNodeRef = import_react6.useRef(null);
   const pendingAudioRequestTextRef = import_react6.useRef("");
   const clearAudioPlayback = () => {
     setIsAudioPlaying(false);
+    if (activeAudioSourceNodeRef.current) {
+      activeAudioSourceNodeRef.current.disconnect();
+      activeAudioSourceNodeRef.current = null;
+    }
     if (activeAudioRef.current) {
       activeAudioRef.current.pause();
       activeAudioRef.current.src = "";
@@ -18303,15 +18311,37 @@ var App = () => {
     const audioBlob = new Blob([audioBytes], { type: mimeType || "audio/pcm" });
     return URL.createObjectURL(audioBlob);
   };
+  const connectAudioGainNode = (audio) => {
+    if (typeof window === "undefined" || !window.AudioContext) {
+      return null;
+    }
+    if (!audioContextRef.current) {
+      audioContextRef.current = new window.AudioContext;
+    }
+    if (!audioGainNodeRef.current) {
+      audioGainNodeRef.current = audioContextRef.current.createGain();
+      audioGainNodeRef.current.connect(audioContextRef.current.destination);
+    }
+    audioGainNodeRef.current.gain.value = audioPlaybackGain;
+    const sourceNode = audioContextRef.current.createMediaElementSource(audio);
+    sourceNode.connect(audioGainNodeRef.current);
+    activeAudioSourceNodeRef.current = sourceNode;
+    return sourceNode;
+  };
   const playAudio = (audioBase64, mimeType) => {
     const nextAudioSourceUrl = createAudioUrlFromBase64(audioBase64, mimeType);
     clearAudioPlayback();
     audioSourceUrlRef.current = nextAudioSourceUrl;
     const audio = new Audio(nextAudioSourceUrl);
+    const sourceNode = connectAudioGainNode(audio);
     activeAudioRef.current = audio;
     setIsAudioPlaying(true);
     audio.onended = () => {
       setIsAudioPlaying(false);
+      if (sourceNode && activeAudioSourceNodeRef.current === sourceNode) {
+        sourceNode.disconnect();
+        activeAudioSourceNodeRef.current = null;
+      }
       if (activeAudioRef.current === audio) {
         activeAudioRef.current = null;
       }
@@ -18321,13 +18351,24 @@ var App = () => {
       }
     };
     audio.onerror = () => {
+      if (sourceNode && activeAudioSourceNodeRef.current === sourceNode) {
+        sourceNode.disconnect();
+        activeAudioSourceNodeRef.current = null;
+      }
       setErrorText("Unable to play audio");
       clearAudioPlayback();
     };
-    audio.play().catch(() => {
-      setErrorText("Unable to play audio");
-      clearAudioPlayback();
-    });
+    (async () => {
+      try {
+        if (audioContextRef.current?.state === "suspended") {
+          await audioContextRef.current.resume();
+        }
+        await audio.play();
+      } catch {
+        setErrorText("Unable to play audio");
+        clearAudioPlayback();
+      }
+    })();
     setErrorText("");
   };
   import_react6.useEffect(() => {
@@ -18341,6 +18382,9 @@ var App = () => {
   import_react6.useEffect(() => {
     return () => {
       clearAudioPlayback();
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, []);
   import_react6.useEffect(() => {
@@ -18711,7 +18755,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.2.8"
+        children: "v0.3.1"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
