@@ -1,6 +1,6 @@
 import { Translator } from "./Translator"
 import { WordDefinition, WordToken } from "@template/core"
-import { decodeBase64PcmChunksToWavBlob } from "../utils/AudioUtils"
+import { decodeBase64PcmChunksToWavBlob } from "@template/api"
 
 type OpenAiRealtimeServerEvent = {
   type?: string
@@ -46,7 +46,7 @@ export const OpenAiTranslator = (): Translator => {
 
   const model = "gpt-realtime"
   const timeoutMs = 3000
-  const defaultAudioVoice = "alloy"
+  const defaultAudioVoice = "sage" // marin
   const defaultAudioFormat = "pcm16"
 
   type QueuedRequest = {
