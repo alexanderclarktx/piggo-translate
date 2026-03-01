@@ -49,7 +49,7 @@ export const OpenAiTranslator = (): Translator => {
 
   const model = "gpt-realtime"
   const timeoutMs = 3000
-  const defaultAudioVoice = "sage" // marin
+  const defaultAudioVoice = "sage" // marin sage
   const defaultAudioFormat = "pcm16"
 
   type QueuedRequest = {
