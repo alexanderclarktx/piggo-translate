@@ -112,7 +112,6 @@ const App = () => {
   const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
   const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
   const [isAudioLoading, setIsAudioLoading] = useState(false)
-  const [audioSourceUrl, setAudioSourceUrl] = useState("")
   const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = useState(false)
   const clientRef = useRef<Client | null>(null)
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -125,15 +124,21 @@ const App = () => {
   const headerSectionRef = useRef<HTMLElement | null>(null)
   const paneStackRef = useRef<HTMLElement | null>(null)
   const audioSourceUrlRef = useRef("")
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  const clearAudioSource = () => {
+  const clearAudioPlayback = () => {
+    if (activeAudioRef.current) {
+      activeAudioRef.current.pause()
+      activeAudioRef.current.src = ""
+      activeAudioRef.current = null
+    }
+
     if (!audioSourceUrlRef.current) {
       return
     }
 
     URL.revokeObjectURL(audioSourceUrlRef.current)
     audioSourceUrlRef.current = ""
-    setAudioSourceUrl("")
   }
 
   const createAudioUrlFromBase64 = (audioBase64: string, mimeType: string) => {
@@ -160,9 +165,7 @@ const App = () => {
 
   useEffect(() => {
     return () => {
-      if (audioSourceUrlRef.current) {
-        URL.revokeObjectURL(audioSourceUrlRef.current)
-      }
+      clearAudioPlayback()
     }
   }, [])
 
@@ -221,7 +224,7 @@ const App = () => {
         }
 
         setOutputWords(words)
-        clearAudioSource()
+        clearAudioPlayback()
         setIsAudioLoading(false)
         definitionContextRef.current = joinOutputTokens(words, targetLanguageRef.current, "word")
         setSelectedOutputWords(autoDefinitionWords)
@@ -257,13 +260,30 @@ const App = () => {
       onAudioLoadingChange: setIsAudioLoading,
       onAudioSuccess: (audioBase64, mimeType) => {
         const nextAudioSourceUrl = createAudioUrlFromBase64(audioBase64, mimeType)
+        clearAudioPlayback()
+        audioSourceUrlRef.current = nextAudioSourceUrl
 
-        if (audioSourceUrlRef.current) {
-          URL.revokeObjectURL(audioSourceUrlRef.current)
+        const audio = new Audio(nextAudioSourceUrl)
+        activeAudioRef.current = audio
+        audio.onended = () => {
+          if (activeAudioRef.current === audio) {
+            activeAudioRef.current = null
+          }
+
+          if (audioSourceUrlRef.current === nextAudioSourceUrl) {
+            URL.revokeObjectURL(nextAudioSourceUrl)
+            audioSourceUrlRef.current = ""
+          }
+        }
+        audio.onerror = () => {
+          setErrorText("Unable to play audio")
+          clearAudioPlayback()
         }
 
-        audioSourceUrlRef.current = nextAudioSourceUrl
-        setAudioSourceUrl(nextAudioSourceUrl)
+        void audio.play().catch(() => {
+          setErrorText("Unable to play audio")
+          clearAudioPlayback()
+        })
         setErrorText("")
       },
       onAudioError: (errorText) => {
@@ -366,7 +386,7 @@ const App = () => {
       setWordDefinitions([])
       setIsDefinitionLoading(false)
       setIsAudioLoading(false)
-      clearAudioSource()
+      clearAudioPlayback()
       setErrorText("")
       setDebouncedRequest(null)
       clientRef.current?.clearAllRequestState()
@@ -396,7 +416,7 @@ const App = () => {
       setWordDefinitions([])
       setIsDefinitionLoading(false)
       setIsAudioLoading(false)
-      clearAudioSource()
+      clearAudioPlayback()
       setErrorText("")
       setDebouncedRequest(null)
       clientRef.current?.clearAllRequestState()
@@ -542,11 +562,6 @@ const App = () => {
                   isVisible={isTransliterationVisible}
                   onToggle={() => setIsTransliterationVisible((value) => !value)}
                 />
-                {audioSourceUrl ? (
-                  <div className="pane-footer">
-                    <audio controls autoPlay src={audioSourceUrl} style={{ width: "100%" }} />
-                  </div>
-                ) : null}
               </>
             )}
             enableCopyButton
