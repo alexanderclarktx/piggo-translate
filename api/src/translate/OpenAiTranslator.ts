@@ -17,6 +17,7 @@ type OpenAiRealtimeServerEvent = {
       }
     }
     usage?: {
+      input_tokens?: number
       output_tokens?: number
     }
     output?: {
@@ -227,10 +228,11 @@ export const OpenAiTranslator = (): Translator => {
       activeRequest.streamedText = doneText
     }
 
+    const inputTokens = getInputTokenCountFromDoneEvent(parsedEvent)
     const outputTokens = getOutputTokenCountFromDoneEvent(parsedEvent)
     const responseDurationMs = performance.now() - activeRequest.startedAt
     console.log(
-      `[openai] response received in ${responseDurationMs.toFixed(0)}ms (model ${model}) (tokens: ${outputTokens})`
+      `[openai] response ${responseDurationMs.toFixed(0)}ms (input: ${inputTokens ?? "?"}, output: ${outputTokens ?? "?"})`
     )
 
     settleActiveSuccess()
@@ -321,32 +323,27 @@ export const OpenAiTranslator = (): Translator => {
   }
 
   const sendActiveRequest = async () => {
-    if (!activeRequest) {
-      return
-    }
+    if (!activeRequest) return
 
     const socket = await ensureConnected()
 
     socket.send(
       JSON.stringify({
-        type: "conversation.item.create",
-        item: {
-          type: "message",
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: activeRequest.prompt
-            }
-          ]
-        }
-      })
-    )
-
-    socket.send(
-      JSON.stringify({
         type: "response.create",
         response: {
+          conversation: "none",
+          input: [
+            {
+              type: "message",
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: activeRequest.prompt
+                }
+              ]
+            }
+          ],
           modalities: activeRequest.modalities,
           max_output_tokens: activeRequest.maxOutputTokens || 1024,
           instructions: activeRequest.instructions
@@ -362,9 +359,7 @@ export const OpenAiTranslator = (): Translator => {
 
     const nextRequest = queuedRequests.shift()
 
-    if (!nextRequest) {
-      return
-    }
+    if (!nextRequest) return
 
     activeRequest = {
       ...nextRequest,
@@ -510,6 +505,16 @@ const getResponseTextFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
       .join("")
       .trim() || ""
   )
+}
+
+const getInputTokenCountFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
+  const inputTokens = event.response?.usage?.input_tokens
+
+  if (typeof inputTokens === "number" && Number.isFinite(inputTokens)) {
+    return inputTokens
+  }
+
+  return null
 }
 
 const getOutputTokenCountFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
