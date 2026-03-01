@@ -30,6 +30,7 @@ const isSpaceSeparatedLanguage = (language: string) =>
 
 const noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/
 const noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/
+const audioPlaybackGain = 1.8
 
 const joinOutputTokens = (
   tokens: WordToken[],
@@ -127,10 +128,18 @@ const App = () => {
   const paneStackRef = useRef<HTMLElement | null>(null)
   const audioSourceUrlRef = useRef("")
   const activeAudioRef = useRef<HTMLAudioElement | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioGainNodeRef = useRef<GainNode | null>(null)
+  const activeAudioSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null)
   const pendingAudioRequestTextRef = useRef("")
 
   const clearAudioPlayback = () => {
     setIsAudioPlaying(false)
+
+    if (activeAudioSourceNodeRef.current) {
+      activeAudioSourceNodeRef.current.disconnect()
+      activeAudioSourceNodeRef.current = null
+    }
 
     if (activeAudioRef.current) {
       activeAudioRef.current.pause()
@@ -158,16 +167,44 @@ const App = () => {
     return URL.createObjectURL(audioBlob)
   }
 
+  const connectAudioGainNode = (audio: HTMLAudioElement) => {
+    if (typeof window === "undefined" || !window.AudioContext) {
+      return null
+    }
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new window.AudioContext()
+    }
+
+    if (!audioGainNodeRef.current) {
+      audioGainNodeRef.current = audioContextRef.current.createGain()
+      audioGainNodeRef.current.connect(audioContextRef.current.destination)
+    }
+
+    audioGainNodeRef.current.gain.value = audioPlaybackGain
+    const sourceNode = audioContextRef.current.createMediaElementSource(audio)
+    sourceNode.connect(audioGainNodeRef.current)
+    activeAudioSourceNodeRef.current = sourceNode
+
+    return sourceNode
+  }
+
   const playAudio = (audioBase64: string, mimeType: string) => {
     const nextAudioSourceUrl = createAudioUrlFromBase64(audioBase64, mimeType)
     clearAudioPlayback()
     audioSourceUrlRef.current = nextAudioSourceUrl
 
     const audio = new Audio(nextAudioSourceUrl)
+    const sourceNode = connectAudioGainNode(audio)
     activeAudioRef.current = audio
     setIsAudioPlaying(true)
     audio.onended = () => {
       setIsAudioPlaying(false)
+
+      if (sourceNode && activeAudioSourceNodeRef.current === sourceNode) {
+        sourceNode.disconnect()
+        activeAudioSourceNodeRef.current = null
+      }
 
       if (activeAudioRef.current === audio) {
         activeAudioRef.current = null
@@ -179,14 +216,27 @@ const App = () => {
       }
     }
     audio.onerror = () => {
+      if (sourceNode && activeAudioSourceNodeRef.current === sourceNode) {
+        sourceNode.disconnect()
+        activeAudioSourceNodeRef.current = null
+      }
+
       setErrorText("Unable to play audio")
       clearAudioPlayback()
     }
 
-    void audio.play().catch(() => {
-      setErrorText("Unable to play audio")
-      clearAudioPlayback()
-    })
+    void (async () => {
+      try {
+        if (audioContextRef.current?.state === "suspended") {
+          await audioContextRef.current.resume()
+        }
+
+        await audio.play()
+      } catch {
+        setErrorText("Unable to play audio")
+        clearAudioPlayback()
+      }
+    })()
     setErrorText("")
   }
 
@@ -203,6 +253,10 @@ const App = () => {
   useEffect(() => {
     return () => {
       clearAudioPlayback()
+
+      if (audioContextRef.current) {
+        void audioContextRef.current.close()
+      }
     }
   }, [])
 
