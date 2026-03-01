@@ -1,6 +1,6 @@
 import {
   DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
-  normalizeDefinition, Cache, Client, RequestSnapshot, isLocal, isMobile
+  normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile
 } from "@template/web"
 import { Model, WordDefinition, WordToken } from "@template/core"
 import { useEffect, useRef, useState } from "react"
@@ -121,10 +121,12 @@ const App = () => {
   const targetLanguageRef = useRef(targetLanguage)
   const selectedModelRef = useRef(selectedModel)
   const CacheRef = useRef(Cache())
+  const audioCacheRef = useRef(AudioCache())
   const headerSectionRef = useRef<HTMLElement | null>(null)
   const paneStackRef = useRef<HTMLElement | null>(null)
   const audioSourceUrlRef = useRef("")
   const activeAudioRef = useRef<HTMLAudioElement | null>(null)
+  const pendingAudioRequestTextRef = useRef("")
 
   const clearAudioPlayback = () => {
     if (activeAudioRef.current) {
@@ -151,6 +153,35 @@ const App = () => {
 
     const audioBlob = new Blob([audioBytes], { type: mimeType || "audio/pcm" })
     return URL.createObjectURL(audioBlob)
+  }
+
+  const playAudio = (audioBase64: string, mimeType: string) => {
+    const nextAudioSourceUrl = createAudioUrlFromBase64(audioBase64, mimeType)
+    clearAudioPlayback()
+    audioSourceUrlRef.current = nextAudioSourceUrl
+
+    const audio = new Audio(nextAudioSourceUrl)
+    activeAudioRef.current = audio
+    audio.onended = () => {
+      if (activeAudioRef.current === audio) {
+        activeAudioRef.current = null
+      }
+
+      if (audioSourceUrlRef.current === nextAudioSourceUrl) {
+        URL.revokeObjectURL(nextAudioSourceUrl)
+        audioSourceUrlRef.current = ""
+      }
+    }
+    audio.onerror = () => {
+      setErrorText("Unable to play audio")
+      clearAudioPlayback()
+    }
+
+    void audio.play().catch(() => {
+      setErrorText("Unable to play audio")
+      clearAudioPlayback()
+    })
+    setErrorText("")
   }
 
   useEffect(() => {
@@ -259,36 +290,21 @@ const App = () => {
       },
       onAudioLoadingChange: setIsAudioLoading,
       onAudioSuccess: (audioBase64, mimeType) => {
-        const nextAudioSourceUrl = createAudioUrlFromBase64(audioBase64, mimeType)
-        clearAudioPlayback()
-        audioSourceUrlRef.current = nextAudioSourceUrl
-
-        const audio = new Audio(nextAudioSourceUrl)
-        activeAudioRef.current = audio
-        audio.onended = () => {
-          if (activeAudioRef.current === audio) {
-            activeAudioRef.current = null
-          }
-
-          if (audioSourceUrlRef.current === nextAudioSourceUrl) {
-            URL.revokeObjectURL(nextAudioSourceUrl)
-            audioSourceUrlRef.current = ""
-          }
-        }
-        audio.onerror = () => {
-          setErrorText("Unable to play audio")
-          clearAudioPlayback()
+        if (pendingAudioRequestTextRef.current) {
+          audioCacheRef.current.set({
+            text: pendingAudioRequestTextRef.current,
+            audioBase64,
+            mimeType
+          })
         }
 
-        void audio.play().catch(() => {
-          setErrorText("Unable to play audio")
-          clearAudioPlayback()
-        })
-        setErrorText("")
+        playAudio(audioBase64, mimeType)
+        pendingAudioRequestTextRef.current = ""
       },
       onAudioError: (errorText) => {
         setIsAudioLoading(false)
         setErrorText(errorText)
+        pendingAudioRequestTextRef.current = ""
       }
     })
 
@@ -575,6 +591,14 @@ const App = () => {
                 return
               }
 
+              const cachedAudio = audioCacheRef.current.get(outputText)
+
+              if (cachedAudio) {
+                playAudio(cachedAudio.audioBase64, cachedAudio.mimeType)
+                return
+              }
+
+              pendingAudioRequestTextRef.current = outputText
               clientRef.current?.sendAudioRequest({
                 text: outputText,
                 model: selectedModelRef.current
