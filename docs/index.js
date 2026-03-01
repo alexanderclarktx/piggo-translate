@@ -18755,7 +18755,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.2.8"
+        children: "v0.3.1"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
