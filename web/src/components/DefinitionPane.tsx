@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { getDynamicIntervalDuration } from "./paneUtils"
 
 const definitionSeparator = " — "
@@ -42,28 +42,6 @@ const DefinitionPane = ({
   const [desiredText, setDesiredText] = useState(initialParts.suffixText)
   const [fadeVersion, setFadeVersion] = useState(0)
   const [isFadeVisible, setIsFadeVisible] = useState(false)
-  const contentRef = useRef<HTMLDivElement | null>(null)
-  const [contentHeight, setContentHeight] = useState<number | null>(null)
-  const measureContentHeight = () => {
-    const content = contentRef.current
-
-    if (!content) {
-      return
-    }
-
-    const previousHeightStyle = content.style.height
-    content.style.height = "auto"
-    const nextHeight = content.scrollHeight
-    content.style.height = previousHeightStyle
-
-    setContentHeight((currentHeight) => {
-      if (currentHeight === nextHeight) {
-        return currentHeight
-      }
-
-      return nextHeight
-    })
-  }
 
   useEffect(() => {
     if (shouldAnimateOnMountRef.current) {
@@ -130,22 +108,6 @@ const DefinitionPane = ({
     }
   }, [desiredText, text])
 
-  useLayoutEffect(() => {
-    measureContentHeight()
-  }, [prefixText, desiredText, fadeVersion])
-
-  useEffect(() => {
-    window.addEventListener("resize", measureContentHeight)
-
-    return () => {
-      window.removeEventListener("resize", measureContentHeight)
-    }
-  }, [])
-
-  const contentStyle: CSSProperties | undefined = contentHeight === null
-    ? undefined
-    : { height: `${contentHeight}px` }
-
   return (
     <section
       className={paneClassName}
@@ -159,11 +121,9 @@ const DefinitionPane = ({
       ) : null}
 
       <div
-        ref={contentRef}
         className="definition-pane-text-content definition-pane-text-content-selectable"
         role="textbox"
         aria-label={ariaLabel}
-        style={contentStyle}
       >
         {prefixText}
         <span

@@ -18704,14 +18704,14 @@ var App = () => {
               className: "fade-in",
               ariaLabel: `Definition for ${word}`,
               value: paneValue
-            }, `${word}-${index}`, false, undefined, this);
+            }, `definition-pane-${index}`, false, undefined, this);
           })
         ]
       }, undefined, true, undefined, this),
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.2.7"
+        children: "v0.2.8"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
