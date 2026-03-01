@@ -624,7 +624,7 @@ const App = () => {
 
           return (
             <DefinitionPane
-              key={`${word}-${index}`}
+              key={`definition-pane-${index}`}
               id={`definition-pane-${index}-title`}
               title=""
               showHeader={false}
