@@ -1,5 +1,6 @@
 import { Model } from "@template/core"
-import { httpJson, httpText, OpenAiTranslator } from "@template/api"
+import { httpJson, httpText } from "./utils/HttpUtils"
+import { OpenAiTranslator } from "./translate/OpenAiTranslator"
 
 const logServerError = (context: string, error: unknown) => {
   if (error instanceof Error) {

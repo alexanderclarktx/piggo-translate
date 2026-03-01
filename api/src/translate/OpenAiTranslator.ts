@@ -1,6 +1,6 @@
 import { Translator } from "./Translator"
 import { WordDefinition, WordToken } from "@template/core"
-import { decodeBase64PcmChunksToWavBlob } from "@template/api"
+import { decodeBase64PcmChunksToWavBlob } from "../utils/AudioUtils"
 
 type OpenAiRealtimeServerEvent = {
   type?: string
@@ -266,6 +266,15 @@ export const OpenAiTranslator = (): Translator => {
         isWsOpen = true
         ws = nextSocket
         console.log("[openai] realtime websocket opened")
+        nextSocket.send(
+          JSON.stringify({
+            type: "session.update",
+            session: {
+              voice: defaultAudioVoice,
+              output_audio_format: defaultAudioFormat
+            }
+          })
+        )
         resolve(nextSocket)
       }
 
@@ -337,13 +346,7 @@ export const OpenAiTranslator = (): Translator => {
         response: {
           modalities: activeRequest.modalities,
           max_output_tokens: activeRequest.maxOutputTokens || 1024,
-          instructions: activeRequest.instructions,
-          ...(activeRequest.modalities.includes("audio")
-            ? {
-              voice: activeRequest.audioVoice || defaultAudioVoice,
-              output_audio_format: defaultAudioFormat
-            }
-            : {})
+          instructions: activeRequest.instructions
         }
       })
     )

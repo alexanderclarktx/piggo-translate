@@ -12,4 +12,18 @@ describe("OpenAiTranslator.getAudio", () => {
     expect(audio.type).toBe("audio/wav")
     expect(audio.size).toBeGreaterThan(0)
   })
+
+  integrationTest("supports multiple audio requests on one translator instance", async () => {
+    const translator = OpenAiTranslator()
+    const firstAudio = await translator.getAudio("hello")
+    const secondAudio = await translator.getAudio("hello again")
+
+    expect(firstAudio).toBeInstanceOf(Blob)
+    expect(firstAudio.type).toBe("audio/wav")
+    expect(firstAudio.size).toBeGreaterThan(0)
+
+    expect(secondAudio).toBeInstanceOf(Blob)
+    expect(secondAudio.type).toBe("audio/wav")
+    expect(secondAudio.size).toBeGreaterThan(0)
+  })
 })
