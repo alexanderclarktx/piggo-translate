@@ -27,10 +27,7 @@ const InputPane = ({ id, title, placeholder, ariaLabel, value, maxLength, classN
 
   useLayoutEffect(() => {
     const textarea = localTextareaRef.current
-
-    if (!textarea) {
-      return
-    }
+    if (!textarea) return
 
     textarea.style.height = "auto"
     textarea.style.height = `${textarea.scrollHeight}px`
