@@ -18738,7 +18738,11 @@ var App = () => {
           selectedOutputWords.map((word, index) => {
             const normalizedWord = normalizeDefinition(word);
             const definition = definitionByWord.get(normalizedWord) || "";
-            const paneValue = definition ? `${word} — ${definition}` : word;
+            const transliterationKey = normalizedWord || word;
+            const transliteration = transliterationByWord.get(transliterationKey) || "";
+            const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration;
+            const definitionPrefix = shouldShowTransliterationPrefix ? `${word} (${transliteration})` : word;
+            const paneValue = definition ? `${definitionPrefix} — ${definition}` : word;
             return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(DefinitionPane, {
               id: `definition-pane-${index}-title`,
               title: "",
