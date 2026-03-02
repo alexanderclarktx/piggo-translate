@@ -468,16 +468,17 @@ const App = () => {
 
   // if language changes
   useEffect(() => {
+    setOutputWords([])
+    setSelectedOutputWords([])
+    setWordDefinitions([])
+    setIsDefinitionLoading(false)
+    setIsAudioLoading(false)
+    clearAudioPlayback()
+    setErrorText("")
+
     const trimmedText = inputText.trim()
 
     if (!trimmedText) {
-      setOutputWords([])
-      setSelectedOutputWords([])
-      setWordDefinitions([])
-      setIsDefinitionLoading(false)
-      setIsAudioLoading(false)
-      clearAudioPlayback()
-      setErrorText("")
       setDebouncedRequest(null)
       clientRef.current?.clearAllRequestState()
       return

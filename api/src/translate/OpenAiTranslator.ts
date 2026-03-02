@@ -551,7 +551,7 @@ const buildDefinitionInstructions = (targetLanguage: string, sentence: string) =
     `You write concise explanations for words.\n` +
     `Your response is in english.\n` +
     "The goal is to help someone understand a new word in their non-native language.\n" +
-    "Where possible, describe the etymology of the word or break down its components.\n" +
+    "Where useful, describe the etymology of the word or break down its components.\n" +
     `The language of the word to define is ${targetLanguage}.\n` +
     `The surrounding context for the word is: "${sentence}"\n` +
     "Return only valid JSON with exactly this shape: {\"definition\":\"...\"}\n" +
