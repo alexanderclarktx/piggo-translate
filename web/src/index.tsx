@@ -645,6 +645,7 @@ const App = () => {
               pendingAudioRequestTextRef.current = outputText
               clientRef.current?.sendAudioRequest({
                 text: outputText,
+                targetLanguage,
                 model: selectedModelRef.current
               })
             }}

@@ -400,10 +400,10 @@ export const OpenAiTranslator = (): Translator => {
     })
   }
 
-  const runOpenAiRealtimeAudioRequest = async (text: string) => {
+  const runOpenAiRealtimeAudioRequest = async (text: string, targetLanguage: string) => {
     return await new Promise<Blob>((resolve, reject) => {
       queuedRequests.push({
-        prompt: buildAudioPrompt(text),
+        prompt: buildAudioPrompt(text, targetLanguage),
         instructions: "You are a text-to-speech engine. Speak the provided text exactly, with natural pacing.",
         modalities: ["audio", "text"],
         audioVoice: defaultAudioVoice,
@@ -433,14 +433,19 @@ export const OpenAiTranslator = (): Translator => {
 
       return parseStructuredDefinitions(rawText, word).definitions
     },
-    getAudio: async (text) => {
+    getAudio: async (text, targetLanguage) => {
       const trimmedText = text.trim()
+      const trimmedTargetLanguage = targetLanguage.trim()
 
       if (!trimmedText) {
         throw new Error("Text-to-speech input cannot be empty")
       }
 
-      return await runOpenAiRealtimeAudioRequest(trimmedText)
+      if (!trimmedTargetLanguage) {
+        throw new Error("Text-to-speech target language cannot be empty")
+      }
+
+      return await runOpenAiRealtimeAudioRequest(trimmedText, trimmedTargetLanguage)
     }
   }
 }
@@ -555,9 +560,9 @@ const buildDefinitionPrompt = (word: string, targetLanguage: string, context: st
   )
 }
 
-const buildAudioPrompt = (text: string) => {
+const buildAudioPrompt = (text: string, targetLanguage: string) => {
   return (
-    "Speak the exact text below. Do not add or remove words.\n" +
+    `Speak the exact text below in ${targetLanguage}. Do not add or remove words.\n` +
     "-------------------------- text below this line -----------------------------\n\n" +
     text
   )

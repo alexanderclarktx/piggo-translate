@@ -32,6 +32,7 @@ type WsAudioRequest = {
   type: "translate.audio.request"
   requestId: string
   text: string
+  targetLanguage: string
   model?: Model
 }
 

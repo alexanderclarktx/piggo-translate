@@ -49,6 +49,7 @@ const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
   type: "translate.audio.request"
   requestId: string
   text: string
+  targetLanguage: string
   model: Model
 }) => {
   if (!rawMessage || typeof rawMessage !== "object") {
@@ -112,7 +113,11 @@ const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
   }
 
   if (message.type === "translate.audio.request") {
-    const text = typeof message.text === "string" ? message.text.trim() : ""
+    const { text, targetLanguage } = normalizeTranslateInput(
+      message.text,
+      message.targetLanguage,
+      message.model
+    )
 
     if (!text) {
       return {
@@ -120,10 +125,17 @@ const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
       }
     }
 
+    if (!targetLanguage) {
+      return {
+        error: "Websocket message must include a non-empty 'targetLanguage' string"
+      }
+    }
+
     return {
       type: "translate.audio.request",
       requestId: message.requestId.trim(),
       text,
+      targetLanguage,
       model: message.model === "anthropic" ? "anthropic" : "openai"
     }
   }
@@ -185,10 +197,10 @@ export const createApiServer = () => {
     return translator.getDefinitions(word, targetLanguage, context)
   }
 
-  const getAudioWithModel = async (model: Model, text: string) => {
+  const getAudioWithModel = async (model: Model, text: string, targetLanguage: string) => {
     const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
 
-    return translator.getAudio(text)
+    return translator.getAudio(text, targetLanguage)
   }
 
   const server = Bun.serve({
@@ -277,7 +289,8 @@ export const createApiServer = () => {
           try {
             const audioBlob = await getAudioWithModel(
               parsedMessage.model,
-              parsedMessage.text
+              parsedMessage.text,
+              parsedMessage.targetLanguage
             )
             const audioBuffer = Buffer.from(await audioBlob.arrayBuffer())
 
