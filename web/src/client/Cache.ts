@@ -1,4 +1,4 @@
-import { WordDefinition } from "@template/core"
+import { WordDefinition } from "@piggo-translate/core"
 
 const definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
 

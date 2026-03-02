@@ -2,9 +2,9 @@ import {
   DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
   normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile,
   readTargetLanguage, writeTargetLanguage
-} from "@template/web"
-import { Languages, Model, WordDefinition, WordToken } from "@template/core"
-import { useEffect, useRef, useState } from "react"
+} from "@piggo-translate/web"
+import { Languages, Model, WordDefinition, WordToken } from "@piggo-translate/core"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
@@ -12,6 +12,8 @@ const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
 const isSpaceSeparatedLanguage = (language: string) =>
   !language.toLowerCase().includes("chinese") &&
   !language.toLowerCase().includes("japanese")
+
+const isChineseLanguage = (language: string) => language.toLowerCase().includes("chinese")
 
 const noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/
 const noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/
@@ -76,6 +78,28 @@ const getAutoDefinitionWords = (tokens: WordToken[]) => {
   return selectableWords.length === 1 ? selectableWords : []
 }
 
+const getDefinitionSelectionWords = (selectedWords: string[], targetLanguage: string) => {
+  const normalizedSelectedWords = selectedWords
+    .map((word) => normalizeDefinition(word))
+    .filter(Boolean)
+
+  if (!isChineseLanguage(targetLanguage)) {
+    return Array.from(new Set(normalizedSelectedWords))
+  }
+
+  const expandedWords = normalizedSelectedWords.flatMap((word) => {
+    const characters = Array.from(word)
+
+    if (characters.length < 2) {
+      return [word]
+    }
+
+    return [word, ...characters]
+  })
+
+  return Array.from(new Set(expandedWords))
+}
+
 const App = () => {
   const [inputText, setInputText] = useState("")
   const [outputWords, setOutputWords] = useState<WordToken[]>([])
@@ -104,7 +128,7 @@ const App = () => {
   const clientRef = useRef<Client | null>(null)
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingInputSelectionRef = useRef<{ start: number, end: number } | null>(null)
-  const selectedOutputWordsRef = useRef<string[]>([])
+  const selectedDefinitionWordsRef = useRef<string[]>([])
   const definitionContextRef = useRef("")
   const targetLanguageRef = useRef(targetLanguage)
   const selectedModelRef = useRef(selectedModel)
@@ -264,9 +288,7 @@ const App = () => {
       paneStack.style.marginTop = `${marginTop}px`
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      updatePaneStackMarginTop()
-    })
+    const resizeObserver = new ResizeObserver(updatePaneStackMarginTop)
 
     resizeObserver.observe(paneStack)
 
@@ -278,10 +300,46 @@ const App = () => {
   const normalizedInputText = normalizeText(inputText)
   const hasInputText = !!normalizedInputText
   const hasOutputWords = outputWords.length > 0
+  const outputText = joinOutputTokens(outputWords, targetLanguage, "word")
+  const outputLiteralText = joinOutputTokens(outputWords, targetLanguage, "literal", {
+    forceSpaceSeparated: true
+  })
+  const definitionSelectionWords = useMemo(
+    () => getDefinitionSelectionWords(selectedOutputWords, targetLanguage),
+    [selectedOutputWords, targetLanguage]
+  )
+  const selectedLanguageOption = Languages.find((language) => language.value === targetLanguage)
   const isSpinnerVisible =
     isTranslating &&
     !!latestRequestSnapshot.id &&
     normalizedInputText === latestRequestSnapshot.normalizedInputText
+
+  const resetTranslationState = (clearOutputWords: boolean) => {
+    if (clearOutputWords) {
+      setOutputWords([])
+      setSelectedOutputWords([])
+    }
+
+    setWordDefinitions([])
+    setIsDefinitionLoading(false)
+    setIsAudioLoading(false)
+    clearAudioPlayback()
+    setErrorText("")
+  }
+
+  const clearAllRequestState = (clearOutputWords: boolean) => {
+    resetTranslationState(clearOutputWords)
+    setDebouncedRequest(null)
+    clientRef.current?.clearAllRequestState()
+  }
+
+  const setDebouncedTranslateRequest = (text: string) => {
+    setDebouncedRequest({
+      text,
+      targetLanguage,
+      model: selectedModel
+    })
+  }
 
   useEffect(() => {
     const client = Client({
@@ -315,20 +373,8 @@ const App = () => {
       },
       onDefinitionsSuccess: (definitions) => {
         CacheRef.current.writeDefinitionsToCache(definitions)
-        const selectedWords = selectedOutputWordsRef.current
+        const selectedWords = selectedDefinitionWordsRef.current
         setWordDefinitions(CacheRef.current.getCachedDefinitions(selectedWords))
-        const missingWords = CacheRef.current.getMissingDefinitionWords(selectedWords)
-
-        if (missingWords.length) {
-          client.sendDefinitionsRequest({
-            word: missingWords[0],
-            context: definitionContextRef.current,
-            targetLanguage: targetLanguageRef.current,
-            model: selectedModelRef.current
-          })
-        } else {
-          setIsDefinitionLoading(false)
-        }
       },
       onDefinitionsError: () => {
         setWordDefinitions([])
@@ -370,10 +416,6 @@ const App = () => {
   useEffect(() => {
     selectedModelRef.current = selectedModel
   }, [selectedModel])
-
-  useEffect(() => {
-    selectedOutputWordsRef.current = selectedOutputWords
-  }, [selectedOutputWords])
 
   useEffect(() => {
     let isDisposed = false
@@ -433,10 +475,7 @@ const App = () => {
       }
 
       const activeElement = document.activeElement
-
-      if (activeElement === textarea) return
-
-      if (isEditableElement(activeElement)) return
+      if (activeElement === textarea || isEditableElement(activeElement)) return
 
       event.preventDefault()
 
@@ -469,28 +508,16 @@ const App = () => {
 
   // if input changes
   useEffect(() => {
-    const trimmedText = inputText.trim()
+    const trimmedInputText = inputText.trim()
     clientRef.current?.setCurrentNormalizedInputText(normalizedInputText)
 
-    if (!trimmedText) {
-      setOutputWords([])
-      setSelectedOutputWords([])
-      setWordDefinitions([])
-      setIsDefinitionLoading(false)
-      setIsAudioLoading(false)
-      clearAudioPlayback()
-      setErrorText("")
-      setDebouncedRequest(null)
-      clientRef.current?.clearAllRequestState()
+    if (!trimmedInputText) {
+      clearAllRequestState(true)
       return
     }
 
     const timeoutId = window.setTimeout(() => {
-      setDebouncedRequest({
-        text: trimmedText,
-        targetLanguage,
-        model: selectedModel
-      })
+      setDebouncedTranslateRequest(trimmedInputText)
     }, isMobile() ? 1000 : 400)
 
     return () => {
@@ -500,27 +527,16 @@ const App = () => {
 
   // if language changes
   useEffect(() => {
-    setOutputWords([])
-    setSelectedOutputWords([])
-    setWordDefinitions([])
-    setIsDefinitionLoading(false)
-    setIsAudioLoading(false)
-    clearAudioPlayback()
-    setErrorText("")
+    resetTranslationState(true)
 
-    const trimmedText = inputText.trim()
+    const trimmedInputText = inputText.trim()
 
-    if (!trimmedText) {
-      setDebouncedRequest(null)
-      clientRef.current?.clearAllRequestState()
+    if (!trimmedInputText) {
+      clearAllRequestState(false)
       return
     }
 
-    setDebouncedRequest({
-      text: trimmedText,
-      targetLanguage,
-      model: selectedModel
-    })
+    setDebouncedTranslateRequest(trimmedInputText)
   }, [targetLanguage])
 
   useEffect(() => {
@@ -532,19 +548,19 @@ const App = () => {
   }, [debouncedRequest, isSocketOpen])
 
   useEffect(() => {
-    if (!selectedOutputWords.length) {
+    selectedDefinitionWordsRef.current = definitionSelectionWords
+
+    if (!definitionSelectionWords.length) {
       setWordDefinitions([])
       setIsDefinitionLoading(false)
       clientRef.current?.clearDefinitionRequestState()
       return
     }
 
-    const uniqueWords = Array.from(new Set(selectedOutputWords))
-    const cachedDefinitions = CacheRef.current.getCachedDefinitions(uniqueWords)
+    const cachedDefinitions = CacheRef.current.getCachedDefinitions(definitionSelectionWords)
     setWordDefinitions(cachedDefinitions)
 
-    const missingWords = CacheRef.current.getMissingDefinitionWords(uniqueWords)
-    const definitionContext = joinOutputTokens(outputWords, targetLanguage, "word")
+    const missingWords = CacheRef.current.getMissingDefinitionWords(definitionSelectionWords)
 
     if (!missingWords.length) {
       setIsDefinitionLoading(false)
@@ -554,36 +570,33 @@ const App = () => {
 
     if (!isSocketOpen) return
 
-    definitionContextRef.current = definitionContext
-    clientRef.current?.sendDefinitionsRequest({
-      word: missingWords[0],
-      context: definitionContext,
-      targetLanguage,
-      model: selectedModel
+    definitionContextRef.current = outputText
+    missingWords.forEach((word) => {
+      clientRef.current?.sendDefinitionsRequest({
+        word,
+        context: outputText,
+        targetLanguage,
+        model: selectedModel
+      })
     })
-  }, [outputWords, selectedOutputWords, isSocketOpen, selectedModel, targetLanguage])
+  }, [definitionSelectionWords, isSocketOpen, outputText, selectedModel, targetLanguage])
 
   const definitionByWord = new Map(
     wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition])
   )
-  const transliterationByWord = new Map<string, string>()
+  const transliterationByWord = outputWords.reduce((transliterations, { word, punctuation, literal }) => {
+    if (punctuation || !literal) {
+      return transliterations
+    }
 
-  outputWords
-    .filter(({ punctuation }) => !punctuation)
-    .forEach(({ word, literal }) => {
-      const normalizedWord = normalizeDefinition(word)
-      const transliterationKey = normalizedWord || word
+    const transliterationKey = normalizeDefinition(word) || word
 
-      if (transliterationByWord.has(transliterationKey)) {
-        return
-      }
+    if (!transliterations.has(transliterationKey)) {
+      transliterations.set(transliterationKey, literal)
+    }
 
-      if (literal) {
-        transliterationByWord.set(transliterationKey, literal)
-      }
-    })
-
-  const selectedLanguageOption = Languages.find((language) => language.value === targetLanguage)
+    return transliterations
+  }, new Map<string, string>())
 
   return (
     <main>
@@ -598,15 +611,6 @@ const App = () => {
         <img src="favicon.svg" alt="" aria-hidden="true" className="title-icon fade-in" draggable={false} />
         <p className="header-title">Piggo Translate</p>
       </section>
-
-      {/* <TranslateToolbar
-        errorText={errorText}
-        languageOptions={languageOptions}
-        targetLanguage={targetLanguage}
-        onLanguageSelect={(language) => {
-          setTargetLanguage(language)
-        }}
-      /> */}
 
       <section ref={paneStackRef} className="pane-stack" aria-label="Translator workspace">
         {!isSocketOpen && isConnectionDotDelayComplete ? (
@@ -642,7 +646,7 @@ const App = () => {
             title="Translated Output"
             showHeader={false}
             ariaLabel="Translated text"
-            value={joinOutputTokens(outputWords, targetLanguage, "word")}
+            value={outputText}
             selectionTokens={outputWords.map((token) => ({
               value: token.word,
               selectionWord: token.word,
@@ -652,18 +656,16 @@ const App = () => {
             animateOnMount
             footer={selectedLanguageOption?.transliterate ? (
                 <Transliteration
-                  value={joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true })}
+                  value={outputLiteralText}
                   isVisible={isTransliterationVisible}
                   onToggle={() => setIsTransliterationVisible((value) => !value)}
                 />
             ) : null}
             enableCopyButton
-            copyValue={joinOutputTokens(outputWords, targetLanguage, "word")}
+            copyValue={outputText}
             enableAudioButton={!isAudioPlaying}
             isAudioLoading={isAudioLoading}
             onAudioClick={() => {
-              const outputText = joinOutputTokens(outputWords, targetLanguage, "word")
-
               if (!outputText.trim()) {
                 return
               }
@@ -683,13 +685,11 @@ const App = () => {
               })
             }}
             className="fade-in"
-            onSelectionChange={(selectionWords) => {
-              setSelectedOutputWords(selectionWords)
-            }}
+            onSelectionChange={setSelectedOutputWords}
           />
         ) : null}
 
-        {selectedOutputWords.map((word, index) => {
+        {definitionSelectionWords.map((word, index) => {
           const normalizedWord = normalizeDefinition(word)
           const definition = definitionByWord.get(normalizedWord) || ""
           const transliterationKey = normalizedWord || word
@@ -717,7 +717,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.3.5
+          v0.3.6
         </span>
       )}
     </main>

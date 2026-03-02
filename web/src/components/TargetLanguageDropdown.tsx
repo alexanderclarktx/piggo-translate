@@ -1,5 +1,5 @@
-import { isMobile } from "@template/web"
-import { Language } from "@template/core"
+import { isMobile } from "@piggo-translate/web"
+import { Language } from "@piggo-translate/core"
 import { useState } from "react"
 
 type Props = {
