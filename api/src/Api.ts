@@ -86,9 +86,7 @@ const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
 
   if (message.type === "translate.request") {
     const { text, targetLanguage } = normalizeTranslateInput(
-      message.text,
-      message.targetLanguage,
-      message.model
+      message.text, message.targetLanguage, message.model
     )
 
     if (!text) {

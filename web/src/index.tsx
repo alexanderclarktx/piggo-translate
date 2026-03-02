@@ -674,16 +674,7 @@ const App = () => {
             />
           )
         })}
-
       </section>
-
-      {/* <div className="pane-switch-row" aria-label="Model selection">
-        <ModelSwitch
-          className="output-pane-model-switch"
-          selectedModel={selectedModel}
-          onModelToggle={setSelectedModel}
-        />
-      </div> */}
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
