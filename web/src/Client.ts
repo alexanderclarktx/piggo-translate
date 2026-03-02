@@ -137,8 +137,7 @@ export const Client = (options: ClientOptions): Client => {
       type: "translate.request",
       requestId,
       text: requestInput.text,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     }
 
     socket.send(JSON.stringify(request))
@@ -174,8 +173,7 @@ export const Client = (options: ClientOptions): Client => {
       requestId,
       word: normalizedWord,
       context: normalizedContext,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     }
 
     socket.send(JSON.stringify(request))
@@ -197,8 +195,7 @@ export const Client = (options: ClientOptions): Client => {
       type: "translate.audio.request",
       requestId,
       text: normalizedText,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     }
 
     socket.send(JSON.stringify(request))

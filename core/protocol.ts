@@ -11,7 +11,6 @@ type WsRequest = {
   requestId: string
   text: string
   targetLanguage: string
-  model?: Model
 }
 
 type WordDefinition = {
@@ -25,7 +24,6 @@ type WsDefinitionsRequest = {
   word: string
   context: string
   targetLanguage: string
-  model?: Model
 }
 
 type WsAudioRequest = {
@@ -33,7 +31,6 @@ type WsAudioRequest = {
   requestId: string
   text: string
   targetLanguage: string
-  model?: Model
 }
 
 type WsReady = {
