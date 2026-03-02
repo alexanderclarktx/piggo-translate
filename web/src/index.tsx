@@ -684,7 +684,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.3.2
+          v0.3.3
         </span>
       )}
     </main>
