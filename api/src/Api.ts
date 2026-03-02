@@ -1,4 +1,4 @@
-import { Model } from "@template/core"
+import { Model } from "@piggo-translate/core"
 import { httpJson, httpText } from "./utils/HttpUtils"
 import { OpenAiTranslator } from "./translate/OpenAiTranslator"
 

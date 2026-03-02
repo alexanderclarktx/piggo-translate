@@ -2,8 +2,8 @@ import {
   DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
   normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile,
   readTargetLanguage, writeTargetLanguage
-} from "@template/web"
-import { Languages, Model, WordDefinition, WordToken } from "@template/core"
+} from "@piggo-translate/web"
+import { Languages, Model, WordDefinition, WordToken } from "@piggo-translate/core"
 import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 
@@ -717,7 +717,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.3.5
+          v0.3.6
         </span>
       )}
     </main>

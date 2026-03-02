@@ -1,4 +1,4 @@
-import { Model } from "@template/core"
+import { Model } from "@piggo-translate/core"
 
 type ModelSwitchProps = {
   selectedModel: Model

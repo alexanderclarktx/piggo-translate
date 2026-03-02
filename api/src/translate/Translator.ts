@@ -1,4 +1,4 @@
-import { WordDefinition, WordToken } from "@template/core"
+import { WordDefinition, WordToken } from "@piggo-translate/core"
 
 export type Translator = {
   translate: (text: string, targetLanguage: string) => Promise<{

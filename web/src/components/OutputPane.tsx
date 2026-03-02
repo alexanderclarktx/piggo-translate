@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from "react"
-import { isMobile } from "@template/web"
+import { isMobile } from "@piggo-translate/web"
 import {
   PaneSelectionToken, buildSelectableDisplayText, copyTextToClipboard,
   getAnimatedSelectableTokens, getDynamicIntervalDuration, getSelectionWord,

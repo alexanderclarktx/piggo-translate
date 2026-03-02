@@ -1,7 +1,7 @@
 import {
   Model, WsAudioRequest, WsDefinitionsRequest, WsRequest, WsServerMessage, WordDefinition, WordToken
-} from "@template/core"
-import { isLocal, normalizeDefinition } from "@template/web"
+} from "@piggo-translate/core"
+import { isLocal, normalizeDefinition } from "@piggo-translate/web"
 
 export type RequestSnapshot = {
   id: string

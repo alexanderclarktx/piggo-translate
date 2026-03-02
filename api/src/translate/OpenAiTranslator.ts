@@ -1,5 +1,5 @@
 import { Translator } from "./Translator"
-import { WordDefinition, WordToken } from "@template/core"
+import { WordDefinition, WordToken } from "@piggo-translate/core"
 import { decodeBase64PcmChunksToWavBlob } from "../utils/AudioUtils"
 
 type OpenAiRealtimeServerEvent = {
