@@ -428,7 +428,7 @@ export const OpenAiTranslator = (): Translator => {
     getDefinitions: async (word, targetLanguage, context) => {
       const rawText = await runOpenAiRealtimeRequest(
         word,
-        buildDefinitionInstructions(targetLanguage, context.trim())
+        buildDefinitionInstructions(targetLanguage, context.trim(), word.length)
       )
       // console.log(rawText)
 
@@ -546,7 +546,7 @@ const buildTranslationInstructions = (targetLanguage: string) => {
   )
 }
 
-const buildDefinitionInstructions = (targetLanguage: string, sentence: string) => {
+const buildDefinitionInstructions = (targetLanguage: string, sentence: string, wordLength: number) => {
   return (
     `You write concise explanations for words.\n` +
     `Your response is in english.\n` +
@@ -555,8 +555,9 @@ const buildDefinitionInstructions = (targetLanguage: string, sentence: string) =
     `The language of the word to define is ${targetLanguage}.\n` +
     `The surrounding context for the word is: "${sentence}"\n` +
     "Return only valid JSON with exactly this shape: {\"definition\":\"...\"}\n" +
-    "Keep the definition under 30 words.\n" +
-    "If the word is a single Chinese character, explain its component radicals\n" +
+    // `Keep the definition under ${wordLength === 1 ? 20 : 30} words.\n` +
+    `Keep the definition under 20 words.\n` +
+    (wordLength === 1 ? "If the word is a Chinese character, explain its component radicals.\n" : "") +
     // "If the word is composed of multiple component words, briefly explain each component.\n" +
     // "Consider the grammatical rules of the language when analyzing the word and its components.\n" +
     "Do not include the word itself.\n" +
