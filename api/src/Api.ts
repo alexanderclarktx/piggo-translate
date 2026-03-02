@@ -51,6 +51,12 @@ const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
   text: string
   targetLanguage: string
   model: Model
+} | {
+  type: "translate.grammar.request"
+  requestId: string
+  text: string
+  targetLanguage: string
+  model: Model
 }) => {
   if (!rawMessage || typeof rawMessage !== "object") {
     return {
@@ -71,7 +77,8 @@ const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
   if (
     message.type !== "translate.request" &&
     message.type !== "translate.definitions.request" &&
-    message.type !== "translate.audio.request"
+    message.type !== "translate.audio.request" &&
+    message.type !== "translate.grammar.request"
   ) {
     return {
       error: "Unsupported websocket message type"
@@ -131,6 +138,34 @@ const parseTranslateWsMessage = (rawMessage: unknown): { error: string } | ({
 
     return {
       type: "translate.audio.request",
+      requestId: message.requestId.trim(),
+      text,
+      targetLanguage,
+      model: message.model === "anthropic" ? "anthropic" : "openai"
+    }
+  }
+
+  if (message.type === "translate.grammar.request") {
+    const { text, targetLanguage } = normalizeTranslateInput(
+      message.text,
+      message.targetLanguage,
+      message.model
+    )
+
+    if (!text) {
+      return {
+        error: "Websocket message must include a non-empty 'text' string"
+      }
+    }
+
+    if (!targetLanguage) {
+      return {
+        error: "Websocket message must include a non-empty 'targetLanguage' string"
+      }
+    }
+
+    return {
+      type: "translate.grammar.request",
       requestId: message.requestId.trim(),
       text,
       targetLanguage,
@@ -199,6 +234,12 @@ export const createApiServer = () => {
     const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
 
     return translator.getAudio(text, targetLanguage)
+  }
+
+  const getGrammarWithModel = async (model: Model, text: string, targetLanguage: string) => {
+    const translator = model === "anthropic" ? openAiTranslator : openAiTranslator
+
+    return translator.getGrammar(text, targetLanguage)
   }
 
   const server = Bun.serve({
@@ -303,6 +344,35 @@ export const createApiServer = () => {
 
             const messageText =
               error instanceof Error ? error.message : "Text-to-speech failed"
+
+            ws.send(JSON.stringify({
+              type: "translate.error",
+              requestId: parsedMessage.requestId,
+              error: messageText
+            }))
+          }
+
+          return
+        }
+
+        if (parsedMessage.type === "translate.grammar.request") {
+          try {
+            const grammar = await getGrammarWithModel(
+              parsedMessage.model,
+              parsedMessage.text,
+              parsedMessage.targetLanguage
+            )
+
+            ws.send(JSON.stringify({
+              type: "translate.grammar.success",
+              requestId: parsedMessage.requestId,
+              grammar
+            }))
+          } catch (error) {
+            logServerError(`WS grammar ${parsedMessage.requestId}`, error)
+
+            const messageText =
+              error instanceof Error ? error.message : "Grammar explanation failed"
 
             ws.send(JSON.stringify({
               type: "translate.error",

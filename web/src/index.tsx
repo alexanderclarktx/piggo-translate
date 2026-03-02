@@ -1,7 +1,7 @@
 import {
-  DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
-  normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile,
-  readTargetLanguage, writeTargetLanguage
+  DefinitionPane, GrammarPane, InputPane, OutputPane, TargetLanguageDropdown,
+  Transliteration, normalizeDefinition, Cache, AudioCache, GrammarCache,
+  Client, RequestSnapshot, isLocal, isMobile, readTargetLanguage, writeTargetLanguage
 } from "@piggo-translate/web"
 import { Languages, Model, WordDefinition, WordToken } from "@piggo-translate/core"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -9,9 +9,9 @@ import { createRoot } from "react-dom/client"
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
 
-const isSpaceSeparatedLanguage = (language: string) =>
-  !language.toLowerCase().includes("chinese") &&
-  !language.toLowerCase().includes("japanese")
+const isSpaceSeparatedLanguage = (language: string) => ![
+  "chinese (simplified)", "japanese"
+].includes(language.toLowerCase())
 
 const isChineseLanguage = (language: string) => language.toLowerCase().includes("chinese")
 
@@ -20,25 +20,16 @@ const noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/
 const audioPlaybackGain = 3
 
 const joinOutputTokens = (
-  tokens: WordToken[],
-  targetLanguage: string,
-  tokenKey: "word" | "literal",
-  options?: {
-    forceSpaceSeparated?: boolean
-  }
+  tokens: WordToken[], targetLanguage: string, tokenKey: "word" | "literal", options?: { forceSpaceSeparated?: boolean }
 ) => {
   const useSpaces = options?.forceSpaceSeparated || isSpaceSeparatedLanguage(targetLanguage)
 
   return tokens.reduce((result, token, tokenIndex) => {
     const tokenValue = token[tokenKey]
 
-    if (!tokenValue) {
-      return result
-    }
+    if (!tokenValue) return result
 
-    if (!result) {
-      return tokenValue
-    }
+    if (!result) return tokenValue
 
     if (!useSpaces) {
       return `${result}${tokenValue}`
@@ -100,6 +91,18 @@ const getDefinitionSelectionWords = (selectedWords: string[], targetLanguage: st
   return Array.from(new Set(expandedWords))
 }
 
+const getNonPunctuationWordCount = (tokens: WordToken[]) => {
+  return tokens.reduce((count, token) => {
+    const normalizedWord = normalizeDefinition(token.word)
+
+    if (token.punctuation || !normalizedWord) {
+      return count
+    }
+
+    return count + 1
+  }, 0)
+}
+
 const App = () => {
   const [inputText, setInputText] = useState("")
   const [outputWords, setOutputWords] = useState<WordToken[]>([])
@@ -122,6 +125,8 @@ const App = () => {
   const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
   const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
   const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
+  const [grammarExplanation, setGrammarExplanation] = useState("")
+  const [isGrammarLoading, setIsGrammarLoading] = useState(false)
   const [isAudioLoading, setIsAudioLoading] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = useState(false)
@@ -134,6 +139,7 @@ const App = () => {
   const selectedModelRef = useRef(selectedModel)
   const CacheRef = useRef(Cache())
   const audioCacheRef = useRef(AudioCache())
+  const grammarCacheRef = useRef(GrammarCache())
   const headerSectionRef = useRef<HTMLElement | null>(null)
   const paneStackRef = useRef<HTMLElement | null>(null)
   const audioSourceUrlRef = useRef("")
@@ -142,6 +148,7 @@ const App = () => {
   const audioGainNodeRef = useRef<GainNode | null>(null)
   const activeAudioSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null)
   const pendingAudioRequestTextRef = useRef("")
+  const pendingGrammarRequestTextRef = useRef("")
 
   const clearAudioPlayback = () => {
     setIsAudioPlaying(false)
@@ -300,7 +307,9 @@ const App = () => {
   const normalizedInputText = normalizeText(inputText)
   const hasInputText = !!normalizedInputText
   const hasOutputWords = outputWords.length > 0
+  const hasMultipleOutputWords = getNonPunctuationWordCount(outputWords) > 1
   const outputText = joinOutputTokens(outputWords, targetLanguage, "word")
+  const hasTargetText = !!outputText.trim()
   const outputLiteralText = joinOutputTokens(outputWords, targetLanguage, "literal", {
     forceSpaceSeparated: true
   })
@@ -308,6 +317,10 @@ const App = () => {
     () => getDefinitionSelectionWords(selectedOutputWords, targetLanguage),
     [selectedOutputWords, targetLanguage]
   )
+  const shouldShowGrammarPane =
+    hasTargetText &&
+    hasMultipleOutputWords &&
+    definitionSelectionWords.length === 0
   const selectedLanguageOption = Languages.find((language) => language.value === targetLanguage)
   const isSpinnerVisible =
     isTranslating &&
@@ -322,6 +335,9 @@ const App = () => {
 
     setWordDefinitions([])
     setIsDefinitionLoading(false)
+    setGrammarExplanation("")
+    setIsGrammarLoading(false)
+    pendingGrammarRequestTextRef.current = ""
     setIsAudioLoading(false)
     clearAudioPlayback()
     setErrorText("")
@@ -365,7 +381,10 @@ const App = () => {
         setSelectedOutputWords(autoDefinitionWords)
         setWordDefinitions([])
         setIsDefinitionLoading(false)
+        setGrammarExplanation("")
+        setIsGrammarLoading(false)
         client.clearDefinitionRequestState()
+        client.clearGrammarRequestState()
       },
       onTranslateError: (error) => {
         setIsAudioLoading(false)
@@ -379,6 +398,23 @@ const App = () => {
       onDefinitionsError: () => {
         setWordDefinitions([])
         setIsDefinitionLoading(false)
+      },
+      onGrammarLoadingChange: setIsGrammarLoading,
+      onGrammarSuccess: (grammar) => {
+        if (pendingGrammarRequestTextRef.current) {
+          grammarCacheRef.current.set({
+            text: pendingGrammarRequestTextRef.current,
+            grammar
+          })
+        }
+
+        pendingGrammarRequestTextRef.current = ""
+        setGrammarExplanation(grammar.trim())
+      },
+      onGrammarError: () => {
+        pendingGrammarRequestTextRef.current = ""
+        setGrammarExplanation("")
+        setIsGrammarLoading(false)
       },
       onAudioLoadingChange: setIsAudioLoading,
       onAudioSuccess: (audioBase64, mimeType) => {
@@ -581,6 +617,37 @@ const App = () => {
     })
   }, [definitionSelectionWords, isSocketOpen, outputText, selectedModel, targetLanguage])
 
+  useEffect(() => {
+    if (!shouldShowGrammarPane) {
+      pendingGrammarRequestTextRef.current = ""
+      setGrammarExplanation("")
+      setIsGrammarLoading(false)
+      clientRef.current?.clearGrammarRequestState()
+      return
+    }
+
+    const cachedGrammar = grammarCacheRef.current.get(outputText)
+
+    if (cachedGrammar) {
+      pendingGrammarRequestTextRef.current = ""
+      setGrammarExplanation(cachedGrammar)
+      setIsGrammarLoading(false)
+      clientRef.current?.clearGrammarRequestState()
+      return
+    }
+
+    if (!isSocketOpen) {
+      return
+    }
+
+    // pendingGrammarRequestTextRef.current = outputText
+    // clientRef.current?.sendGrammarRequest({
+    //   text: outputText,
+    //   targetLanguage,
+    //   model: selectedModel
+    // })
+  }, [isSocketOpen, outputText, selectedModel, shouldShowGrammarPane, targetLanguage])
+
   const definitionByWord = new Map(
     wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition])
   )
@@ -689,6 +756,18 @@ const App = () => {
           />
         ) : null}
 
+        {shouldShowGrammarPane && (isGrammarLoading || !!grammarExplanation) ? (
+          <GrammarPane
+            id="grammar-pane-title"
+            title=""
+            showHeader={false}
+            animateOnMount
+            className="fade-in"
+            ariaLabel="Grammar explanation"
+            value={grammarExplanation}
+          />
+        ) : null}
+
         {definitionSelectionWords.map((word, index) => {
           const normalizedWord = normalizeDefinition(word)
           const definition = definitionByWord.get(normalizedWord) || ""
@@ -717,7 +796,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.3.7
+          v0.4.1
         </span>
       )}
     </main>

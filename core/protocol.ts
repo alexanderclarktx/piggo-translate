@@ -1,7 +1,7 @@
 export type Model = "openai" | "anthropic"
 
-export type WsClientMessage = WsRequest | WsDefinitionsRequest | WsAudioRequest
-export type WsServerMessage = WsReady | WsSuccess | WsDefinitionsSuccess | WsAudioSuccess | WsError
+export type WsClientMessage = WsRequest | WsDefinitionsRequest | WsAudioRequest | WsGrammarRequest
+export type WsServerMessage = WsReady | WsSuccess | WsDefinitionsSuccess | WsAudioSuccess | WsGrammarSuccess | WsError
 
 export type WordToken = {
   word: string
@@ -36,6 +36,13 @@ export type WsAudioRequest = {
   targetLanguage: string
 }
 
+export type WsGrammarRequest = {
+  type: "translate.grammar.request"
+  requestId: string
+  text: string
+  targetLanguage: string
+}
+
 export type WsReady = {
   type: "ready"
 }
@@ -57,6 +64,12 @@ export type WsAudioSuccess = {
   requestId: string
   audioBase64: string
   mimeType: string
+}
+
+export type WsGrammarSuccess = {
+  type: "translate.grammar.success"
+  requestId: string
+  grammar: string
 }
 
 export type WsError = {

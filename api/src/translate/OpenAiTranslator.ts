@@ -48,7 +48,7 @@ export const OpenAiTranslator = (): Translator => {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY")
 
-  const model = "gpt-realtime-1.5"
+  const model = "gpt-realtime-1.5"// "gpt-realtime-1.5"
   const timeoutMs = 5000
   const defaultAudioVoice = "sage" // marin sage
   const defaultAudioFormat = "pcm16"
@@ -434,6 +434,30 @@ export const OpenAiTranslator = (): Translator => {
 
       return parseStructuredDefinitions(rawText, word).definitions
     },
+    getGrammar: async (text, targetLanguage) => {
+      const trimmedText = text.trim()
+      const trimmedTargetLanguage = targetLanguage.trim()
+
+      if (!trimmedText) {
+        throw new Error("Grammar input cannot be empty")
+      }
+
+      if (!trimmedTargetLanguage) {
+        throw new Error("Grammar target language cannot be empty")
+      }
+
+      console.log(`Requesting grammar explanation for text: "${trimmedText}" in language: "${trimmedTargetLanguage}"`)
+
+      const fmtText = `--------------------------- text below this line -----------------------------\n\n${trimmedText}`
+
+      const rawText = await runOpenAiRealtimeRequest(
+        fmtText,
+        buildGrammarInstructions(trimmedTargetLanguage)
+      )
+
+      console.log(`Received grammar explanation: "${rawText}"`)
+      return rawText
+    },
     getAudio: async (text, targetLanguage) => {
       const trimmedText = text.trim()
       const trimmedTargetLanguage = targetLanguage.trim()
@@ -566,6 +590,20 @@ const buildDefinitionInstructions = (targetLanguage: string, sentence: string, w
   )
 }
 
+const buildGrammarInstructions = (targetLanguage: string) => {
+  return (
+    "You are a grammar assistant\n" + //(IN ENGLISH!!) the grammar of the provided text.\n" +
+    "Always respond in English!!\n" +
+    `The text's language is ${targetLanguage}.\n` +
+    "Explain only the most important points that a non-native speaker would need to understand the grammar.\n" +
+    "Keep your explanation concise (max 20 words) and simple (avoid complex terminology).\n" +
+    "DO NOT RESPOND/REPLY TO THE TEXT ITSELF. YOU ARE NOT A CHATBOT!!\n" +
+    "Do not over-explain obvious things.\n" +
+    "Do not use markdown, code fences, or bullet points.\n" +
+    "Do not include the original text in your explanation.\n"
+  )
+}
+
 const buildAudioPrompt = (text: string, targetLanguage: string) => {
   return (
     `Speak the exact text below in ${targetLanguage}. Do not add or remove words.\n` +
@@ -629,7 +667,5 @@ const parseStructuredDefinitions = (rawText: string, requestedWord: string) => {
     definition: fallbackDefinition
   }].filter((item) => !!item.definition)
 
-  return {
-    definitions
-  } satisfies DefinitionsStructuredOutput
+  return { definitions }
 }

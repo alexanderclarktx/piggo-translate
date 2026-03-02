@@ -3,7 +3,7 @@ const textPaneAnimationMaxIntervalMs = 90
 const textPaneAnimationFastThreshold = 24
 
 export const selectableOutputTokenPattern = /[\p{Script=Han}]|[^\s\p{Script=Han}]+|\s+/gu
-const selectionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
+const selectionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}-]+/gu
 
 export type PaneSelectionToken = {
   value: string
