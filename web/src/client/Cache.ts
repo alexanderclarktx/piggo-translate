@@ -1,6 +1,6 @@
 import { WordDefinition } from "@piggo-translate/core"
 
-const definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu
+const definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}-]+/gu
 
 export const normalizeDefinition = (word: string) => word.replace(definitionWordStripPattern, "")
 

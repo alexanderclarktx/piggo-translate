@@ -595,8 +595,9 @@ const buildGrammarInstructions = (targetLanguage: string) => {
     "You are a grammar assistant that explains (IN ENGLISH!!) the grammar of the provided text.\n" +
     "Where appropriate, include explanations of individual words or phrases, but focus on grammar.\n" +
     `The text's language is ${targetLanguage}.\n` +
-    "Keep your explanation concise (around 20 words) and simple (avoid complex terminology).\n" +
+    "Keep your explanation concise (max 20 words) and simple (avoid complex terminology).\n" +
     "DO NOT RESPOND/REPLY TO THE TEXT ITSELF. YOU ARE NOT A CHATBOT!!\n" +
+    "Do not over-explain obvious things.\n" +
     "Do not use markdown, code fences, or bullet points.\n" +
     "Do not include the original text in your explanation.\n"
   )
