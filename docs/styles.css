@@ -297,6 +297,18 @@ main {
   /* transition: all 500ms ease; */
 }
 
+.grammar-pane {
+  width: 100%;
+  background: rgba(215, 245, 209, 0.92);
+  border: 1px solid rgba(16, 24, 32, 0.12);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  max-width: 600px;
+  cursor: initial;
+  position: relative;
+}
+
 .output-pane-actions {
   position: absolute;
   top: 0.55rem;
@@ -401,7 +413,8 @@ main {
 
 .input-pane-header,
 .output-pane-header,
-.definition-pane-header {
+.definition-pane-header,
+.grammar-pane-header {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid rgba(16, 24, 32, 0.12);
   /* background: rgba(255, 255, 255, 0.6); */
@@ -477,6 +490,19 @@ main {
   font-size: 1.3rem;
 }
 
+.grammar-pane-text-content {
+  user-select: none;
+  box-sizing: border-box;
+  min-height: 0;
+  border: 0;
+  padding: 1rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: left;
+  font-size: 1.2rem;
+}
+
 .definition-pane-value-fade-in {
   display: inline;
   opacity: 0;
@@ -509,8 +535,21 @@ main {
   -webkit-tap-highlight-color: initial;
 }
 
+.grammar-pane-text-content-selectable {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+  -webkit-tap-highlight-color: initial;
+}
+
 .definition-pane-text-content-selectable,
 .definition-pane-text-content-selectable * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.grammar-pane-text-content-selectable,
+.grammar-pane-text-content-selectable * {
   user-select: text;
   -webkit-user-select: text;
 }
@@ -692,6 +731,11 @@ main {
   }
 
   .definition-pane-text-content {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .grammar-pane-text-content {
     padding: 0.7rem;
     font-size: 0.9rem;
   }

@@ -9,7 +9,9 @@ import { createRoot } from "react-dom/client"
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
 
-const isSpaceSeparatedLanguage = (language: string) => !["chinese", "japanese"].includes(language.toLowerCase())
+const isSpaceSeparatedLanguage = (language: string) => ![
+  "chinese (simplified)", "japanese"
+].includes(language.toLowerCase())
 
 const isChineseLanguage = (language: string) => language.toLowerCase().includes("chinese")
 
@@ -638,12 +640,12 @@ const App = () => {
       return
     }
 
-    pendingGrammarRequestTextRef.current = outputText
-    clientRef.current?.sendGrammarRequest({
-      text: outputText,
-      targetLanguage,
-      model: selectedModel
-    })
+    // pendingGrammarRequestTextRef.current = outputText
+    // clientRef.current?.sendGrammarRequest({
+    //   text: outputText,
+    //   targetLanguage,
+    //   model: selectedModel
+    // })
   }, [isSocketOpen, outputText, selectedModel, shouldShowGrammarPane, targetLanguage])
 
   const definitionByWord = new Map(
