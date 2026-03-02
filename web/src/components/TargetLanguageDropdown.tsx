@@ -1,9 +1,9 @@
 import { isMobile } from "@template/web"
-import { LanguageOption } from ".."
+import { Language } from "@template/core"
 import { useState } from "react"
 
 type Props = {
-  options: LanguageOption[]
+  options: Language[]
   targetLanguage: string
   onSelect: (language: string) => void
 }
