@@ -502,11 +502,14 @@ main {
 .output-pane-text-content-selectable {
   cursor: default;
 
-  -webkit-user-select: none; /* iOS Safari */
+  -webkit-user-select: none;
+  /* iOS Safari */
   user-select: none;
 
-  -webkit-touch-callout: none; /* disables the iOS copy/paste callout */
-  -webkit-tap-highlight-color: transparent; /* removes tap flash */
+  -webkit-touch-callout: none;
+  /* disables the iOS copy/paste callout */
+  -webkit-tap-highlight-color: transparent;
+  /* removes tap flash */
 }
 
 .definition-pane-text-content-selectable {
@@ -702,8 +705,12 @@ main {
     padding-right: 2rem;
     padding-left: 2rem;
   }
-  
+
   .definition-pane-text-content {
     padding: 0.7rem;
+  }
+
+  .output-pane-actions {
+    right: 0.3rem;
   }
 }
