@@ -2,25 +2,9 @@ import {
   DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
   normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile
 } from "@template/web"
-import { Model, WordDefinition, WordToken } from "@template/core"
+import { Languages, Model, WordDefinition, WordToken } from "@template/core"
 import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
-
-export type LanguageOption = {
-  label: string
-  value: string
-}
-
-const languageOptions: LanguageOption[] = [
-  { label: "Chinese", value: "Chinese (simplified)" },
-  { label: "English", value: "English" },
-  { label: "Spanish", value: "Spanish" },
-  { label: "Japanese", value: "Japanese" },
-  { label: "Russian", value: "Russian" },
-  { label: "French", value: "French" },
-  // { label: "Italian", value: "Italian" },
-  // { label: "Korean", value: "Korean" },
-]
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
 
@@ -107,7 +91,7 @@ const App = () => {
     targetLanguage: string
     model: Model
   } | null>(null)
-  const [targetLanguage, setTargetLanguage] = useState(languageOptions[0].value)
+  const [targetLanguage, setTargetLanguage] = useState(Languages[0].value)
   const [selectedModel, setSelectedModel] = useState<Model>("openai")
   const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
   const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
@@ -566,6 +550,8 @@ const App = () => {
       }
     })
 
+  const selectedLanguageOption = Languages.find((language) => language.value === targetLanguage)
+
   return (
     <main>
       <section ref={headerSectionRef} style={{
@@ -595,7 +581,7 @@ const App = () => {
         ) : null}
 
         <TargetLanguageDropdown
-          options={languageOptions}
+          options={Languages}
           targetLanguage={targetLanguage}
           onSelect={setTargetLanguage}
         />
@@ -631,15 +617,13 @@ const App = () => {
             }))}
             selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
             animateOnMount
-            footer={(
-              <>
+            footer={selectedLanguageOption?.transliterate ? (
                 <Transliteration
                   value={joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true })}
                   isVisible={isTransliterationVisible}
                   onToggle={() => setIsTransliterationVisible((value) => !value)}
                 />
-              </>
-            )}
+            ) : null}
             enableCopyButton
             copyValue={joinOutputTokens(outputWords, targetLanguage, "word")}
             enableAudioButton={!isAudioPlaying}
@@ -661,6 +645,7 @@ const App = () => {
               pendingAudioRequestTextRef.current = outputText
               clientRef.current?.sendAudioRequest({
                 text: outputText,
+                targetLanguage,
                 model: selectedModelRef.current
               })
             }}
@@ -674,7 +659,13 @@ const App = () => {
         {selectedOutputWords.map((word, index) => {
           const normalizedWord = normalizeDefinition(word)
           const definition = definitionByWord.get(normalizedWord) || ""
-          const paneValue = definition ? `${word} — ${definition}` : word
+          const transliterationKey = normalizedWord || word
+          const transliteration = transliterationByWord.get(transliterationKey) || ""
+          const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration
+          const definitionPrefix = shouldShowTransliterationPrefix
+            ? `${word} (${transliteration})`
+            : word
+          const paneValue = definition ? `${definitionPrefix} — ${definition}` : word
 
           return (
             <DefinitionPane
@@ -689,20 +680,11 @@ const App = () => {
             />
           )
         })}
-
       </section>
-
-      {/* <div className="pane-switch-row" aria-label="Model selection">
-        <ModelSwitch
-          className="output-pane-model-switch"
-          selectedModel={selectedModel}
-          onModelToggle={setSelectedModel}
-        />
-      </div> */}
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.3.1
+          v0.3.2
         </span>
       )}
     </main>

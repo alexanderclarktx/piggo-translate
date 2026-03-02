@@ -45,7 +45,7 @@ export type Client = {
   clearAudioRequestState: () => void
   sendTranslateRequest: (requestInput: TranslateRequestInput) => void
   sendDefinitionsRequest: (requestInput: DefinitionsRequestInput) => void
-  sendAudioRequest: (requestInput: { text: string, model: Model }) => void
+  sendAudioRequest: (requestInput: { text: string, targetLanguage: string, model: Model }) => void
 }
 
 const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim()
@@ -137,8 +137,7 @@ export const Client = (options: ClientOptions): Client => {
       type: "translate.request",
       requestId,
       text: requestInput.text,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     }
 
     socket.send(JSON.stringify(request))
@@ -174,17 +173,16 @@ export const Client = (options: ClientOptions): Client => {
       requestId,
       word: normalizedWord,
       context: normalizedContext,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     }
 
     socket.send(JSON.stringify(request))
   }
 
-  const sendAudioRequest = (requestInput: { text: string, model: Model }) => {
+  const sendAudioRequest = (requestInput: { text: string, targetLanguage: string, model: Model }) => {
     const normalizedText = normalizeText(requestInput.text)
 
-    if (!normalizedText || !socket || socket.readyState !== WebSocket.OPEN) {
+    if (!normalizedText || !requestInput.targetLanguage.trim() || !socket || socket.readyState !== WebSocket.OPEN) {
       return
     }
 
@@ -197,7 +195,7 @@ export const Client = (options: ClientOptions): Client => {
       type: "translate.audio.request",
       requestId,
       text: normalizedText,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     }
 
     socket.send(JSON.stringify(request))

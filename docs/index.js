@@ -17045,8 +17045,8 @@ Learn more: https://react.dev/warnings/version-mismatch`));
       internals.getCurrentFiber = getCurrentFiberForDevTools;
       return injectInternals(internals);
     }() && canUseDOM && window.top === window.self && (-1 < navigator.userAgent.indexOf("Chrome") && navigator.userAgent.indexOf("Edge") === -1 || -1 < navigator.userAgent.indexOf("Firefox"))) {
-      var protocol = window.location.protocol;
-      /^(https?|file):$/.test(protocol) && console.info("%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools" + (protocol === "file:" ? `
+      var protocol2 = window.location.protocol;
+      /^(https?|file):$/.test(protocol2) && console.info("%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools" + (protocol2 === "file:" ? `
 You might need to use a local HTTP server (instead of file://): https://react.dev/link/react-devtools-faq` : ""), "font-weight:bold");
     }
     exports.createRoot = function(container, options) {
@@ -18028,8 +18028,7 @@ var Client = (options) => {
       type: "translate.request",
       requestId,
       text: requestInput.text,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     };
     socket.send(JSON.stringify(request));
   };
@@ -18053,14 +18052,13 @@ var Client = (options) => {
       requestId,
       word: normalizedWord,
       context: normalizedContext,
-      targetLanguage: requestInput.targetLanguage,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     };
     socket.send(JSON.stringify(request));
   };
   const sendAudioRequest = (requestInput) => {
     const normalizedText = normalizeText2(requestInput.text);
-    if (!normalizedText || !socket || socket.readyState !== WebSocket.OPEN) {
+    if (!normalizedText || !requestInput.targetLanguage.trim() || !socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
     requestCounter += 1;
@@ -18071,7 +18069,7 @@ var Client = (options) => {
       type: "translate.audio.request",
       requestId,
       text: normalizedText,
-      model: requestInput.model
+      targetLanguage: requestInput.targetLanguage
     };
     socket.send(JSON.stringify(request));
   };
@@ -18194,18 +18192,19 @@ var Client = (options) => {
 // src/utils/WebUtils.ts
 var isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 var isLocal = () => window.location.hostname === "localhost";
+// ../core/Languages.ts
+var Languages = [
+  { label: "Chinese", value: "Chinese (simplified)", transliterate: true },
+  { label: "English", value: "English", transliterate: false },
+  { label: "Spanish", value: "Spanish", transliterate: false },
+  { label: "Japanese", value: "Japanese", transliterate: true },
+  { label: "Russian", value: "Russian", transliterate: false },
+  { label: "French", value: "French", transliterate: false }
+];
 // src/index.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
-var languageOptions = [
-  { label: "Chinese", value: "Chinese (simplified)" },
-  { label: "English", value: "English" },
-  { label: "Spanish", value: "Spanish" },
-  { label: "Japanese", value: "Japanese" },
-  { label: "Russian", value: "Russian" },
-  { label: "French", value: "French" }
-];
 var normalizeText3 = (text) => text.replace(/\s+/g, " ").trim();
 var isSpaceSeparatedLanguage = (language) => !language.toLowerCase().includes("chinese") && !language.toLowerCase().includes("japanese");
 var noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/;
@@ -18260,7 +18259,7 @@ var App = () => {
     normalizedInputText: ""
   });
   const [debouncedRequest, setDebouncedRequest] = import_react6.useState(null);
-  const [targetLanguage, setTargetLanguage] = import_react6.useState(languageOptions[0].value);
+  const [targetLanguage, setTargetLanguage] = import_react6.useState(Languages[0].value);
   const [selectedModel, setSelectedModel] = import_react6.useState("openai");
   const [selectedOutputWords, setSelectedOutputWords] = import_react6.useState([]);
   const [wordDefinitions, setWordDefinitions] = import_react6.useState([]);
@@ -18634,6 +18633,7 @@ var App = () => {
       transliterationByWord.set(transliterationKey, literal);
     }
   });
+  const selectedLanguageOption = Languages.find((language) => language.value === targetLanguage);
   return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("main", {
     children: [
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("section", {
@@ -18670,7 +18670,7 @@ var App = () => {
             "aria-hidden": "true"
           }, undefined, false, undefined, this) : null,
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(TargetLanguageDropdown, {
-            options: languageOptions,
+            options: Languages,
             targetLanguage,
             onSelect: setTargetLanguage
           }, undefined, false, undefined, this),
@@ -18704,13 +18704,11 @@ var App = () => {
             })),
             selectionWordJoiner: isSpaceSeparatedLanguage(targetLanguage) ? " " : "",
             animateOnMount: true,
-            footer: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
-              children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Transliteration, {
-                value: joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true }),
-                isVisible: isTransliterationVisible,
-                onToggle: () => setIsTransliterationVisible((value) => !value)
-              }, undefined, false, undefined, this)
-            }, undefined, false, undefined, this),
+            footer: selectedLanguageOption?.transliterate ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Transliteration, {
+              value: joinOutputTokens(outputWords, targetLanguage, "literal", { forceSpaceSeparated: true }),
+              isVisible: isTransliterationVisible,
+              onToggle: () => setIsTransliterationVisible((value) => !value)
+            }, undefined, false, undefined, this) : null,
             enableCopyButton: true,
             copyValue: joinOutputTokens(outputWords, targetLanguage, "word"),
             enableAudioButton: !isAudioPlaying,
@@ -18728,6 +18726,7 @@ var App = () => {
               pendingAudioRequestTextRef.current = outputText;
               clientRef.current?.sendAudioRequest({
                 text: outputText,
+                targetLanguage,
                 model: selectedModelRef.current
               });
             },
@@ -18739,7 +18738,11 @@ var App = () => {
           selectedOutputWords.map((word, index) => {
             const normalizedWord = normalizeDefinition(word);
             const definition = definitionByWord.get(normalizedWord) || "";
-            const paneValue = definition ? `${word} — ${definition}` : word;
+            const transliterationKey = normalizedWord || word;
+            const transliteration = transliterationByWord.get(transliterationKey) || "";
+            const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration;
+            const definitionPrefix = shouldShowTransliterationPrefix ? `${word} (${transliteration})` : word;
+            const paneValue = definition ? `${definitionPrefix} — ${definition}` : word;
             return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(DefinitionPane, {
               id: `definition-pane-${index}-title`,
               title: "",
@@ -18755,7 +18758,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.3.1"
+        children: "v0.3.2"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
