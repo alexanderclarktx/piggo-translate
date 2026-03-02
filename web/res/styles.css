@@ -389,8 +389,6 @@ main {
 }
 
 .output-pane-action-spinner {
-  width: 0.9rem;
-  height: 0.9rem;
   border-color: rgba(16, 24, 32, 0.25);
   border-top-color: rgba(16, 24, 32, 0.9);
 }
@@ -711,7 +709,12 @@ main {
   }
 
   .output-pane-actions {
-    top: 0.3rem;
-    right: 0.3rem;
+    top: 0.1rem;
+    right: 0.1rem;
+  }
+
+  .input-pane-spinner {
+    right: 0.5rem;
+    bottom: 0.5rem;
   }
 }
