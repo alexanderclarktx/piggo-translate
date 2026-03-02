@@ -49,7 +49,7 @@ export const OpenAiTranslator = (): Translator => {
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY")
 
   const model = "gpt-realtime-1.5"
-  const timeoutMs = 3000
+  const timeoutMs = 5000
   const defaultAudioVoice = "sage" // marin sage
   const defaultAudioFormat = "pcm16"
 

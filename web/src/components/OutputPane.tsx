@@ -39,6 +39,7 @@ const OutputPane = ({
   const [isCopySelected, setIsCopySelected] = useState(false)
   const copySelectedTimeoutRef = useRef<number | null>(null)
   const paneClassName = ["output-pane", className].filter(Boolean).join(" ")
+  const shouldRenderCopyButton = !!enableCopyButton && !isMobile()
   const isEditableActiveElement = () => {
     const activeElement = document.activeElement
 
@@ -392,7 +393,7 @@ const OutputPane = ({
 
       {footer ? footer : null}
 
-      {(enableCopyButton || enableAudioButton) && !isMobile() ? (
+      {enableCopyButton || enableAudioButton ? (
         <div className="output-pane-actions">
           {enableAudioButton ? (
             <button
@@ -419,7 +420,7 @@ const OutputPane = ({
               )}
             </button>
           ) : null}
-          {enableCopyButton ? (
+          {shouldRenderCopyButton ? (
             <button
               type="button"
               className={`output-pane-action-button${didCopy ? " output-pane-copy-button-copied" : ""}${isCopySelected ? " output-pane-copy-button-selected" : ""}`}

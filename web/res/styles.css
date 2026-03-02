@@ -669,6 +669,14 @@ main {
     font-size: 1.2rem;
   }
 
+  .output-pane-action-button {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    transition: opacity 300ms ease, transform 300ms ease, background-color 120ms ease, color 300ms ease, visibility 0s linear 0s;
+  }
+
   .definition-pane .definition-pane-text-content {
     font-size: 1rem;
   }
@@ -689,7 +697,12 @@ main {
     padding-bottom: 0.6rem;
   }
 
-  .output-pane-text-content,
+  .output-pane-text-content {
+    padding: 0.7rem;
+    padding-right: 2rem;
+    padding-left: 2rem;
+  }
+  
   .definition-pane-text-content {
     padding: 0.7rem;
   }
