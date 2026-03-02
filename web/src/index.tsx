@@ -1,6 +1,7 @@
 import {
   DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
-  normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile
+  normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile,
+  readTargetLanguage, writeTargetLanguage
 } from "@template/web"
 import { Languages, Model, WordDefinition, WordToken } from "@template/core"
 import { useEffect, useRef, useState } from "react"
@@ -92,6 +93,7 @@ const App = () => {
     model: Model
   } | null>(null)
   const [targetLanguage, setTargetLanguage] = useState(Languages[0].value)
+  const [isTargetLanguageLoaded, setIsTargetLanguageLoaded] = useState(false)
   const [selectedModel, setSelectedModel] = useState<Model>("openai")
   const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
   const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
@@ -372,6 +374,36 @@ const App = () => {
   useEffect(() => {
     selectedOutputWordsRef.current = selectedOutputWords
   }, [selectedOutputWords])
+
+  useEffect(() => {
+    let isDisposed = false
+
+    void (async () => {
+      const persistedTargetLanguage = await readTargetLanguage()
+
+      if (isDisposed) {
+        return
+      }
+
+      if (persistedTargetLanguage && Languages.some((language) => language.value === persistedTargetLanguage)) {
+        setTargetLanguage(persistedTargetLanguage)
+      }
+
+      setIsTargetLanguageLoaded(true)
+    })()
+
+    return () => {
+      isDisposed = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isTargetLanguageLoaded) {
+      return
+    }
+
+    void writeTargetLanguage(targetLanguage)
+  }, [targetLanguage, isTargetLanguageLoaded])
 
   useEffect(() => {
     const textarea = inputTextareaRef.current
