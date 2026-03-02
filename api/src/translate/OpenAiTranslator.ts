@@ -551,12 +551,12 @@ const buildDefinitionInstructions = (targetLanguage: string, sentence: string) =
     `You write concise explanations for words.\n` +
     `Your response is in english.\n` +
     "The goal is to help someone understand a new word in their non-native language.\n" +
-    "Where useful, describe the etymology of the word or break down its components.\n" +
+    "Where useful, describe the etymology/usage of the word.\n" +
     `The language of the word to define is ${targetLanguage}.\n` +
     `The surrounding context for the word is: "${sentence}"\n` +
     "Return only valid JSON with exactly this shape: {\"definition\":\"...\"}\n" +
     "Keep the definition under 30 words.\n" +
-    "If the word is chinese, explain the character(s)\n" +
+    "If the word is a single Chinese character, explain its components\n" +
     // "If the word is composed of multiple component words, briefly explain each component.\n" +
     // "Consider the grammatical rules of the language when analyzing the word and its components.\n" +
     "Do not include the word itself.\n" +

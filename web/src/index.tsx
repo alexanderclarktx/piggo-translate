@@ -13,6 +13,8 @@ const isSpaceSeparatedLanguage = (language: string) =>
   !language.toLowerCase().includes("chinese") &&
   !language.toLowerCase().includes("japanese")
 
+const isChineseLanguage = (language: string) => language.toLowerCase().includes("chinese")
+
 const noSpaceBeforePunctuationPattern = /^[.,!?;:%)\]\}»”’、。，！？；：]$/
 const noSpaceAfterPunctuationPattern = /^[(\[{«“‘]$/
 const audioPlaybackGain = 3
@@ -76,6 +78,28 @@ const getAutoDefinitionWords = (tokens: WordToken[]) => {
   return selectableWords.length === 1 ? selectableWords : []
 }
 
+const getDefinitionSelectionWords = (selectedWords: string[], targetLanguage: string) => {
+  const normalizedSelectedWords = selectedWords
+    .map((word) => normalizeDefinition(word))
+    .filter(Boolean)
+
+  if (!isChineseLanguage(targetLanguage)) {
+    return Array.from(new Set(normalizedSelectedWords))
+  }
+
+  const expandedWords = normalizedSelectedWords.flatMap((word) => {
+    const characters = Array.from(word)
+
+    if (characters.length < 2) {
+      return [word]
+    }
+
+    return [word, ...characters]
+  })
+
+  return Array.from(new Set(expandedWords))
+}
+
 const App = () => {
   const [inputText, setInputText] = useState("")
   const [outputWords, setOutputWords] = useState<WordToken[]>([])
@@ -104,7 +128,7 @@ const App = () => {
   const clientRef = useRef<Client | null>(null)
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingInputSelectionRef = useRef<{ start: number, end: number } | null>(null)
-  const selectedOutputWordsRef = useRef<string[]>([])
+  const selectedDefinitionWordsRef = useRef<string[]>([])
   const definitionContextRef = useRef("")
   const targetLanguageRef = useRef(targetLanguage)
   const selectedModelRef = useRef(selectedModel)
@@ -315,7 +339,7 @@ const App = () => {
       },
       onDefinitionsSuccess: (definitions) => {
         CacheRef.current.writeDefinitionsToCache(definitions)
-        const selectedWords = selectedOutputWordsRef.current
+        const selectedWords = selectedDefinitionWordsRef.current
         setWordDefinitions(CacheRef.current.getCachedDefinitions(selectedWords))
         const missingWords = CacheRef.current.getMissingDefinitionWords(selectedWords)
 
@@ -370,10 +394,6 @@ const App = () => {
   useEffect(() => {
     selectedModelRef.current = selectedModel
   }, [selectedModel])
-
-  useEffect(() => {
-    selectedOutputWordsRef.current = selectedOutputWords
-  }, [selectedOutputWords])
 
   useEffect(() => {
     let isDisposed = false
@@ -532,18 +552,20 @@ const App = () => {
   }, [debouncedRequest, isSocketOpen])
 
   useEffect(() => {
-    if (!selectedOutputWords.length) {
+    const definitionSelectionWords = getDefinitionSelectionWords(selectedOutputWords, targetLanguage)
+    selectedDefinitionWordsRef.current = definitionSelectionWords
+
+    if (!definitionSelectionWords.length) {
       setWordDefinitions([])
       setIsDefinitionLoading(false)
       clientRef.current?.clearDefinitionRequestState()
       return
     }
 
-    const uniqueWords = Array.from(new Set(selectedOutputWords))
-    const cachedDefinitions = CacheRef.current.getCachedDefinitions(uniqueWords)
+    const cachedDefinitions = CacheRef.current.getCachedDefinitions(definitionSelectionWords)
     setWordDefinitions(cachedDefinitions)
 
-    const missingWords = CacheRef.current.getMissingDefinitionWords(uniqueWords)
+    const missingWords = CacheRef.current.getMissingDefinitionWords(definitionSelectionWords)
     const definitionContext = joinOutputTokens(outputWords, targetLanguage, "word")
 
     if (!missingWords.length) {
@@ -566,6 +588,7 @@ const App = () => {
   const definitionByWord = new Map(
     wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition])
   )
+  const definitionSelectionWords = getDefinitionSelectionWords(selectedOutputWords, targetLanguage)
   const transliterationByWord = new Map<string, string>()
 
   outputWords
@@ -689,7 +712,7 @@ const App = () => {
           />
         ) : null}
 
-        {selectedOutputWords.map((word, index) => {
+        {definitionSelectionWords.map((word, index) => {
           const normalizedWord = normalizeDefinition(word)
           const definition = definitionByWord.get(normalizedWord) || ""
           const transliterationKey = normalizedWord || word
