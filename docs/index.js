@@ -17880,7 +17880,7 @@ var Transliteration = ({ value, isVisible, onToggle }) => {
     ]
   }, undefined, true, undefined, this);
 };
-// src/Cache.ts
+// src/client/Cache.ts
 var definitionWordStripPattern = /[^\p{L}\p{M}\p{N}\p{Script=Han}]+/gu;
 var normalizeDefinition = (word) => word.replace(definitionWordStripPattern, "");
 var getUniqueDefinitionWords = (words) => Array.from(new Set(words.map((word) => normalizeDefinition(word)).filter(Boolean)));
@@ -17930,7 +17930,7 @@ var Cache = (maxItems = 10) => {
     clear
   };
 };
-// src/AudioCache.ts
+// src/client/AudioCache.ts
 var normalizeText = (text) => text.replace(/\s+/g, " ").trim();
 var AudioCache = () => {
   const cache = {};
@@ -17959,7 +17959,7 @@ var AudioCache = () => {
     clear
   };
 };
-// src/Client.ts
+// src/client/Client.ts
 var normalizeText2 = (text) => text.replace(/\s+/g, " ").trim();
 var getTranslateWsUrl = () => {
   return isLocal() ? "http://localhost:5001/api/ws" : "https://piggo-translate-production.up.railway.app/api/ws";
@@ -18190,6 +18190,76 @@ var Client = (options) => {
     sendAudioRequest
   };
 };
+// src/client/Settings.ts
+var dbName = "piggo-translate";
+var dbVersion = 1;
+var storeName = "settings";
+var targetLanguageKey = "targetLanguage";
+var getDatabase = () => {
+  if (typeof window === "undefined" || !window.indexedDB) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    const request = window.indexedDB.open(dbName, dbVersion);
+    request.onerror = () => {
+      resolve(null);
+    };
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(storeName)) {
+        database.createObjectStore(storeName);
+      }
+    };
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+  });
+};
+var readTargetLanguage = async () => {
+  const database = await getDatabase();
+  if (!database) {
+    return null;
+  }
+  return new Promise((resolve) => {
+    const transaction = database.transaction(storeName, "readonly");
+    const store = transaction.objectStore(storeName);
+    const request = store.get(targetLanguageKey);
+    request.onerror = () => {
+      resolve(null);
+    };
+    request.onsuccess = () => {
+      const value = request.result;
+      resolve(typeof value === "string" ? value : null);
+    };
+    transaction.oncomplete = () => {
+      database.close();
+    };
+    transaction.onerror = () => {
+      database.close();
+    };
+  });
+};
+var writeTargetLanguage = async (targetLanguage) => {
+  if (!targetLanguage.trim()) {
+    return;
+  }
+  const database = await getDatabase();
+  if (!database) {
+    return;
+  }
+  await new Promise((resolve) => {
+    const transaction = database.transaction(storeName, "readwrite");
+    const store = transaction.objectStore(storeName);
+    store.put(targetLanguage, targetLanguageKey);
+    transaction.oncomplete = () => {
+      resolve();
+    };
+    transaction.onerror = () => {
+      resolve();
+    };
+  });
+  database.close();
+};
 // src/utils/WebUtils.ts
 var isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 var isLocal = () => window.location.hostname === "localhost";
@@ -18261,6 +18331,7 @@ var App = () => {
   });
   const [debouncedRequest, setDebouncedRequest] = import_react6.useState(null);
   const [targetLanguage, setTargetLanguage] = import_react6.useState(Languages[0].value);
+  const [isTargetLanguageLoaded, setIsTargetLanguageLoaded] = import_react6.useState(false);
   const [selectedModel, setSelectedModel] = import_react6.useState("openai");
   const [selectedOutputWords, setSelectedOutputWords] = import_react6.useState([]);
   const [wordDefinitions, setWordDefinitions] = import_react6.useState([]);
@@ -18498,6 +18569,28 @@ var App = () => {
     selectedOutputWordsRef.current = selectedOutputWords;
   }, [selectedOutputWords]);
   import_react6.useEffect(() => {
+    let isDisposed = false;
+    (async () => {
+      const persistedTargetLanguage = await readTargetLanguage();
+      if (isDisposed) {
+        return;
+      }
+      if (persistedTargetLanguage && Languages.some((language) => language.value === persistedTargetLanguage)) {
+        setTargetLanguage(persistedTargetLanguage);
+      }
+      setIsTargetLanguageLoaded(true);
+    })();
+    return () => {
+      isDisposed = true;
+    };
+  }, []);
+  import_react6.useEffect(() => {
+    if (!isTargetLanguageLoaded) {
+      return;
+    }
+    writeTargetLanguage(targetLanguage);
+  }, [targetLanguage, isTargetLanguageLoaded]);
+  import_react6.useEffect(() => {
     const textarea = inputTextareaRef.current;
     const pendingSelection = pendingInputSelectionRef.current;
     if (!textarea || !pendingSelection) {
@@ -18570,15 +18663,15 @@ var App = () => {
     };
   }, [inputText, normalizedInputText]);
   import_react6.useEffect(() => {
+    setOutputWords([]);
+    setSelectedOutputWords([]);
+    setWordDefinitions([]);
+    setIsDefinitionLoading(false);
+    setIsAudioLoading(false);
+    clearAudioPlayback();
+    setErrorText("");
     const trimmedText = inputText.trim();
     if (!trimmedText) {
-      setOutputWords([]);
-      setSelectedOutputWords([]);
-      setWordDefinitions([]);
-      setIsDefinitionLoading(false);
-      setIsAudioLoading(false);
-      clearAudioPlayback();
-      setErrorText("");
       setDebouncedRequest(null);
       clientRef.current?.clearAllRequestState();
       return;
@@ -18759,7 +18852,7 @@ var App = () => {
       isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
-        children: "v0.3.3"
+        children: "v0.3.4"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);

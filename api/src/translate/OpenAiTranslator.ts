@@ -419,17 +419,18 @@ export const OpenAiTranslator = (): Translator => {
   return {
     translate: async (text, targetLanguage) => {
       const rawText = await runOpenAiRealtimeRequest(
-        buildTranslationPrompt(text, targetLanguage),
-        "You are a translation engine. Translate accurately and preserve meaning, tone, and formatting where possible."
+        text,
+        buildTranslationInstructions(targetLanguage)
       )
 
       return parseStructuredTranslation(rawText)
     },
     getDefinitions: async (word, targetLanguage, context) => {
       const rawText = await runOpenAiRealtimeRequest(
-        buildDefinitionPrompt(word, targetLanguage, context),
-        "You write concise dictionary-style definitions. Return valid JSON only."
+        word,
+        buildDefinitionInstructions(targetLanguage, context.trim())
       )
+      console.log(rawText)
 
       return parseStructuredDefinitions(rawText, word).definitions
     },
@@ -532,31 +533,35 @@ const getOutputTokenCountFromDoneEvent = (event: OpenAiRealtimeServerEvent) => {
   return null
 }
 
-const buildTranslationPrompt = (text: string, targetLanguage: string) => {
+const buildTranslationInstructions = (targetLanguage: string) => {
   return (
-    `Translate the following text (given at the very bottom below the lines) to ${targetLanguage}\n` +
+    `You are a translation engine. Translate from the user text into ${targetLanguage}.\n` +
+    "Preserve meaning, tone, and formatting where possible.\n" +
     "Only return a valid JSON array with this shape: [{\"word\":\"...\",\"literal\":\"...\", \"punctuation\":true|false}]\n" +
-    "Each \"literal\" is a transliteration (pinyin with tone marks for chinese!) OF THE TRANSLATED WORD in the source language.\n" +
+    "Each \"literal\" is a transliteration of the translated word.\n" +
+    "For Chinese transliteration, use pinyin with tone marks.\n" +
     "For Chinese output, each word must be a complete Chinese word (can be multi-character).\n" +
     "Do not include empty strings, markdown, code fences, or explanations.\n" +
-    "-------------------------- words below this line -----------------------------\n\n" +
-    text
+    "If the output cannot be produced, still return valid JSON with the expected shape."
   )
 }
 
-const buildDefinitionPrompt = (word: string, targetLanguage: string, context: string) => {
-  const formattedContext = context.trim()
-
+const buildDefinitionInstructions = (targetLanguage: string, sentence: string) => {
   return (
-    `Write a short definition/explanation in english for the word "${word}" (language is ${targetLanguage}).\n` +
-    `Sentence context: ${JSON.stringify(formattedContext)}\n` +
+    `You write concise explanations for words.\n` +
+    `Your response is in english.\n` +
+    "The goal is to help someone understand a new word in their non-native language.\n" +
+    "Where useful, describe the etymology of the word or break down its components.\n" +
+    `The language of the word to define is ${targetLanguage}.\n` +
+    `The surrounding context for the word is: "${sentence}"\n` +
     "Return only valid JSON with exactly this shape: {\"definition\":\"...\"}\n" +
     "Keep the definition under 30 words.\n" +
-    "If the word is composed of multiple component words, briefly explain each component.\n" +
-    "Consider the grammatical rules of the language when analyzing the word and its components.\n" +
-    "Do not include the word itself!!\n" +
-    "Do not repeat the context!!\n" +
-    "Do not include markdown or code fences.\n\n"
+    "If the word is chinese, explain the character(s)\n" +
+    // "If the word is composed of multiple component words, briefly explain each component.\n" +
+    // "Consider the grammatical rules of the language when analyzing the word and its components.\n" +
+    "Do not include the word itself.\n" +
+    "Do not repeat the provided context.\n" +
+    "Do not include markdown or code fences."
   )
 }
 
