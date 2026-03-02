@@ -17408,6 +17408,7 @@ var OutputPane = ({
   const [isCopySelected, setIsCopySelected] = import_react3.useState(false);
   const copySelectedTimeoutRef = import_react3.useRef(null);
   const paneClassName = ["output-pane", className].filter(Boolean).join(" ");
+  const shouldRenderCopyButton = !!enableCopyButton && !isMobile();
   const isEditableActiveElement = () => {
     const activeElement = document.activeElement;
     if (!(activeElement instanceof HTMLElement)) {
@@ -17666,7 +17667,7 @@ var OutputPane = ({
         })
       }, undefined, false, undefined, this),
       footer ? footer : null,
-      (enableCopyButton || enableAudioButton) && !isMobile() ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+      enableCopyButton || enableAudioButton ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
         className: "output-pane-actions",
         children: [
           enableAudioButton ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
@@ -17700,7 +17701,7 @@ var OutputPane = ({
               ]
             }, undefined, true, undefined, this)
           }, undefined, false, undefined, this) : null,
-          enableCopyButton ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+          shouldRenderCopyButton ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
             type: "button",
             className: `output-pane-action-button${didCopy ? " output-pane-copy-button-copied" : ""}${isCopySelected ? " output-pane-copy-button-selected" : ""}`,
             "aria-label": "Copy output text",
