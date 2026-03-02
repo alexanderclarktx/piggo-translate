@@ -1,5 +1,5 @@
 import {
-  DefinitionPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
+  DefinitionPane, GrammarPane, InputPane, OutputPane, TargetLanguageDropdown, Transliteration,
   normalizeDefinition, Cache, AudioCache, Client, RequestSnapshot, isLocal, isMobile,
   readTargetLanguage, writeTargetLanguage
 } from "@piggo-translate/web"
@@ -100,6 +100,18 @@ const getDefinitionSelectionWords = (selectedWords: string[], targetLanguage: st
   return Array.from(new Set(expandedWords))
 }
 
+const getNonPunctuationWordCount = (tokens: WordToken[]) => {
+  return tokens.reduce((count, token) => {
+    const normalizedWord = normalizeDefinition(token.word)
+
+    if (token.punctuation || !normalizedWord) {
+      return count
+    }
+
+    return count + 1
+  }, 0)
+}
+
 const App = () => {
   const [inputText, setInputText] = useState("")
   const [outputWords, setOutputWords] = useState<WordToken[]>([])
@@ -122,6 +134,8 @@ const App = () => {
   const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
   const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
   const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
+  const [grammarExplanation, setGrammarExplanation] = useState("")
+  const [isGrammarLoading, setIsGrammarLoading] = useState(false)
   const [isAudioLoading, setIsAudioLoading] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = useState(false)
@@ -300,7 +314,9 @@ const App = () => {
   const normalizedInputText = normalizeText(inputText)
   const hasInputText = !!normalizedInputText
   const hasOutputWords = outputWords.length > 0
+  const hasMultipleOutputWords = getNonPunctuationWordCount(outputWords) > 1
   const outputText = joinOutputTokens(outputWords, targetLanguage, "word")
+  const hasTargetText = !!outputText.trim()
   const outputLiteralText = joinOutputTokens(outputWords, targetLanguage, "literal", {
     forceSpaceSeparated: true
   })
@@ -308,6 +324,10 @@ const App = () => {
     () => getDefinitionSelectionWords(selectedOutputWords, targetLanguage),
     [selectedOutputWords, targetLanguage]
   )
+  const shouldShowGrammarPane =
+    hasTargetText &&
+    hasMultipleOutputWords &&
+    definitionSelectionWords.length === 0
   const selectedLanguageOption = Languages.find((language) => language.value === targetLanguage)
   const isSpinnerVisible =
     isTranslating &&
@@ -322,6 +342,8 @@ const App = () => {
 
     setWordDefinitions([])
     setIsDefinitionLoading(false)
+    setGrammarExplanation("")
+    setIsGrammarLoading(false)
     setIsAudioLoading(false)
     clearAudioPlayback()
     setErrorText("")
@@ -365,7 +387,10 @@ const App = () => {
         setSelectedOutputWords(autoDefinitionWords)
         setWordDefinitions([])
         setIsDefinitionLoading(false)
+        setGrammarExplanation("")
+        setIsGrammarLoading(false)
         client.clearDefinitionRequestState()
+        client.clearGrammarRequestState()
       },
       onTranslateError: (error) => {
         setIsAudioLoading(false)
@@ -379,6 +404,14 @@ const App = () => {
       onDefinitionsError: () => {
         setWordDefinitions([])
         setIsDefinitionLoading(false)
+      },
+      onGrammarLoadingChange: setIsGrammarLoading,
+      onGrammarSuccess: (grammar) => {
+        setGrammarExplanation(grammar.trim())
+      },
+      onGrammarError: () => {
+        setGrammarExplanation("")
+        setIsGrammarLoading(false)
       },
       onAudioLoadingChange: setIsAudioLoading,
       onAudioSuccess: (audioBase64, mimeType) => {
@@ -581,6 +614,25 @@ const App = () => {
     })
   }, [definitionSelectionWords, isSocketOpen, outputText, selectedModel, targetLanguage])
 
+  useEffect(() => {
+    if (!shouldShowGrammarPane) {
+      setGrammarExplanation("")
+      setIsGrammarLoading(false)
+      clientRef.current?.clearGrammarRequestState()
+      return
+    }
+
+    if (!isSocketOpen) {
+      return
+    }
+
+    clientRef.current?.sendGrammarRequest({
+      text: outputText,
+      targetLanguage,
+      model: selectedModel
+    })
+  }, [isSocketOpen, outputText, selectedModel, shouldShowGrammarPane, targetLanguage])
+
   const definitionByWord = new Map(
     wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition])
   )
@@ -689,6 +741,18 @@ const App = () => {
           />
         ) : null}
 
+        {shouldShowGrammarPane && (isGrammarLoading || !!grammarExplanation) ? (
+          <GrammarPane
+            id="grammar-pane-title"
+            title=""
+            showHeader={false}
+            animateOnMount
+            className="fade-in"
+            ariaLabel="Grammar explanation"
+            value={grammarExplanation}
+          />
+        ) : null}
+
         {definitionSelectionWords.map((word, index) => {
           const normalizedWord = normalizeDefinition(word)
           const definition = definitionByWord.get(normalizedWord) || ""
@@ -717,7 +781,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.3.7
+          v0.4.1
         </span>
       )}
     </main>

@@ -1,5 +1,6 @@
 import {
-  Model, WsAudioRequest, WsDefinitionsRequest, WsRequest, WsServerMessage, WordDefinition, WordToken
+  Model, WsAudioRequest, WsDefinitionsRequest, WsGrammarRequest, WsRequest,
+  WsServerMessage, WordDefinition, WordToken
 } from "@piggo-translate/core"
 import { isLocal, normalizeDefinition } from "@piggo-translate/web"
 
@@ -21,6 +22,12 @@ export type DefinitionsRequestInput = {
   model: Model
 }
 
+export type GrammarRequestInput = {
+  text: string
+  targetLanguage: string
+  model: Model
+}
+
 export type ClientOptions = {
   onSocketOpenChange: (isOpen: boolean) => void
   onErrorTextChange: (errorText: string) => void
@@ -31,6 +38,9 @@ export type ClientOptions = {
   onTranslateError: (errorText: string) => void
   onDefinitionsSuccess: (definitions: WordDefinition[]) => void
   onDefinitionsError: () => void
+  onGrammarLoadingChange: (isLoading: boolean) => void
+  onGrammarSuccess: (grammar: string) => void
+  onGrammarError: () => void
   onAudioLoadingChange: (isLoading: boolean) => void
   onAudioSuccess: (audioBase64: string, mimeType: string) => void
   onAudioError: (errorText: string) => void
@@ -42,9 +52,11 @@ export type Client = {
   setCurrentNormalizedInputText: (normalizedInputText: string) => void
   clearAllRequestState: () => void
   clearDefinitionRequestState: () => void
+  clearGrammarRequestState: () => void
   clearAudioRequestState: () => void
   sendTranslateRequest: (requestInput: TranslateRequestInput) => void
   sendDefinitionsRequest: (requestInput: DefinitionsRequestInput) => void
+  sendGrammarRequest: (requestInput: GrammarRequestInput) => void
   sendAudioRequest: (requestInput: { text: string, targetLanguage: string, model: Model }) => void
 }
 
@@ -67,6 +79,14 @@ const getDefinitionRequestSignature = (
   return `${model}::${targetLanguage}::${normalizeDefinition(word)}::${normalizeText(context)}`
 }
 
+const getGrammarRequestSignature = (
+  text: string,
+  targetLanguage: string,
+  model: Model
+) => {
+  return `${model}::${targetLanguage}::${normalizeText(text)}`
+}
+
 export const Client = (options: ClientOptions): Client => {
   let socket: WebSocket | null = null
   let reconnectTimeoutId: number | null = null
@@ -81,6 +101,8 @@ export const Client = (options: ClientOptions): Client => {
   let definitionBatchId = 0
   const definitionsRequestById = new Map<string, { signature: string, batchId: number }>()
   const definitionRequestSignaturesInFlight = new Set<string>()
+  let latestGrammarRequestId = ""
+  let latestGrammarRequestSignature = ""
   let latestAudioRequestId = ""
 
   const clearReconnectTimeout = () => {
@@ -104,12 +126,19 @@ export const Client = (options: ClientOptions): Client => {
     options.onAudioLoadingChange(false)
   }
 
+  const clearGrammarRequestState = () => {
+    latestGrammarRequestId = ""
+    latestGrammarRequestSignature = ""
+    options.onGrammarLoadingChange(false)
+  }
+
   const clearAllRequestState = () => {
     latestRequest = { id: "", normalizedInputText: "" }
     options.onLatestRequestChange(latestRequest)
     currentNormalizedInputText = ""
     lastRequestedSignature = ""
     clearDefinitionRequestState()
+    clearGrammarRequestState()
     clearAudioRequestState()
   }
 
@@ -207,6 +236,40 @@ export const Client = (options: ClientOptions): Client => {
     socket.send(JSON.stringify(request))
   }
 
+  const sendGrammarRequest = (requestInput: GrammarRequestInput) => {
+    const normalizedText = normalizeText(requestInput.text)
+    const normalizedTargetLanguage = requestInput.targetLanguage.trim()
+
+    if (!normalizedText || !normalizedTargetLanguage || !socket || socket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    const requestSignature = getGrammarRequestSignature(
+      normalizedText,
+      normalizedTargetLanguage,
+      requestInput.model
+    )
+
+    if (requestSignature === latestGrammarRequestSignature) {
+      return
+    }
+
+    requestCounter += 1
+    const requestId = `${Date.now()}-${requestCounter}`
+    latestGrammarRequestId = requestId
+    latestGrammarRequestSignature = requestSignature
+    options.onGrammarLoadingChange(true)
+
+    const request: WsGrammarRequest = {
+      type: "translate.grammar.request",
+      requestId,
+      text: normalizedText,
+      targetLanguage: normalizedTargetLanguage
+    }
+
+    socket.send(JSON.stringify(request))
+  }
+
   const connectSocket = () => {
     clearReconnectTimeout()
 
@@ -270,6 +333,16 @@ export const Client = (options: ClientOptions): Client => {
         return
       }
 
+      if (message.type === "translate.grammar.success") {
+        if (message.requestId !== latestGrammarRequestId) {
+          return
+        }
+
+        options.onGrammarLoadingChange(false)
+        options.onGrammarSuccess(message.grammar)
+        return
+      }
+
       if (
         message.type === "translate.error" &&
         message.requestId &&
@@ -287,6 +360,15 @@ export const Client = (options: ClientOptions): Client => {
         if (!definitionsRequestById.size) {
           options.onDefinitionLoadingChange(false)
         }
+        return
+      }
+
+      if (
+        message.type === "translate.error" &&
+        message.requestId &&
+        message.requestId === latestGrammarRequestId
+      ) {
+        options.onGrammarError()
         return
       }
 
@@ -343,6 +425,7 @@ export const Client = (options: ClientOptions): Client => {
       options.onSocketOpenChange(false)
       options.onTranslatingChange(false)
       options.onDefinitionLoadingChange(false)
+      options.onGrammarLoadingChange(false)
       options.onAudioLoadingChange(false)
       clearAllRequestState()
       reconnectTimeoutId = window.setTimeout(() => {
@@ -376,9 +459,11 @@ export const Client = (options: ClientOptions): Client => {
     },
     clearAllRequestState,
     clearDefinitionRequestState,
+    clearGrammarRequestState,
     clearAudioRequestState,
     sendTranslateRequest,
     sendDefinitionsRequest,
+    sendGrammarRequest,
     sendAudioRequest
   }
 }

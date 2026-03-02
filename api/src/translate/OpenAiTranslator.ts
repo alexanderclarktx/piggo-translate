@@ -434,6 +434,27 @@ export const OpenAiTranslator = (): Translator => {
 
       return parseStructuredDefinitions(rawText, word).definitions
     },
+    getGrammar: async (text, targetLanguage) => {
+      const trimmedText = text.trim()
+      const trimmedTargetLanguage = targetLanguage.trim()
+
+      if (!trimmedText) {
+        throw new Error("Grammar input cannot be empty")
+      }
+
+      if (!trimmedTargetLanguage) {
+        throw new Error("Grammar target language cannot be empty")
+      }
+
+      console.log(`Requesting grammar explanation for text: "${trimmedText}" in language: "${trimmedTargetLanguage}"`)
+
+      const rawText = await runOpenAiRealtimeRequest(
+        trimmedText,
+        buildGrammarInstructions(trimmedTargetLanguage)
+      )
+
+      return normalizeGrammarExplanation(rawText)
+    },
     getAudio: async (text, targetLanguage) => {
       const trimmedText = text.trim()
       const trimmedTargetLanguage = targetLanguage.trim()
@@ -566,6 +587,16 @@ const buildDefinitionInstructions = (targetLanguage: string, sentence: string, w
   )
 }
 
+const buildGrammarInstructions = (targetLanguage: string) => {
+  return (
+    `Explain the grammar of the provided text (language is ${targetLanguage}).\n` +
+    "Your response is in english.\n" +
+    "Your goal is to explain the most important grammer points for someone new to the language.\n" +
+    "Keep your explanation concise (around 20 words).\n" +
+    "Do not use markdown, code fences, or bullet points."
+  )
+}
+
 const buildAudioPrompt = (text: string, targetLanguage: string) => {
   return (
     `Speak the exact text below in ${targetLanguage}. Do not add or remove words.\n` +
@@ -632,4 +663,23 @@ const parseStructuredDefinitions = (rawText: string, requestedWord: string) => {
   return {
     definitions
   } satisfies DefinitionsStructuredOutput
+}
+
+const normalizeGrammarExplanation = (rawText: string) => {
+  const normalizedText = rawText
+    .trim()
+    .replace(/^```(?:text|markdown)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  console.log(`normalized: ${normalizedText}\n raw: ${rawText}`)
+
+  if (!normalizedText) {
+    throw new Error("OpenAI returned an empty grammar explanation")
+  }
+
+  const words = normalizedText.split(" ").filter(Boolean)
+  const limitedWords = words.slice(0, 20)
+  return limitedWords.join(" ")
 }
