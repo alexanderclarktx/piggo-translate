@@ -18607,10 +18607,9 @@ var getFormattedLiteral = (literal, targetLanguage) => {
 };
 var joinOutputTokens = (tokens, targetLanguage, tokenKey, options) => {
   const useSpaces = options?.forceSpaceSeparated || isSpaceSeparatedLanguage(targetLanguage);
-  const formatToken = tokenKey === "literal" ? (value) => options?.formatToken?.(value) || getFormattedLiteral(value, targetLanguage) : (value) => value;
   return tokens.reduce((result, token, tokenIndex) => {
     const rawTokenValue = token[tokenKey];
-    const tokenValue = formatToken(rawTokenValue);
+    const tokenValue = rawTokenValue;
     if (!tokenValue)
       return result;
     if (!result)
@@ -18669,24 +18668,18 @@ var getCharacterTransliteration = (character, parentWord, transliterations) => {
   if (parentCharacters.length <= 1 || splitLiteral.length !== parentCharacters.length) {
     return "";
   }
-  const matchingCharacterIndexes = parentCharacters.map((parentCharacter, parentCharacterIndex) => parentCharacterIndex).filter((parentCharacterIndex) => parentCharacters[parentCharacterIndex] === character);
-  if (matchingCharacterIndexes.length !== 1) {
+  const firstMatchingCharacterIndex = parentCharacters.indexOf(character);
+  if (firstMatchingCharacterIndex === -1 || parentCharacters.lastIndexOf(character) !== firstMatchingCharacterIndex) {
     return "";
   }
-  const transliterationIndex = matchingCharacterIndexes[0];
+  const transliterationIndex = firstMatchingCharacterIndex;
   return splitLiteral[transliterationIndex];
 };
 var getTransliterationParentWord = (character, definitionSelectionWords) => {
-  for (const word of definitionSelectionWords) {
+  return definitionSelectionWords.find((word) => {
     const wordCharacters = Array.from(word);
-    if (wordCharacters.length <= 1) {
-      continue;
-    }
-    if (wordCharacters.includes(character)) {
-      return word;
-    }
-  }
-  return "";
+    return wordCharacters.length > 1 && wordCharacters.includes(character);
+  }) || "";
 };
 var getNonPunctuationWordCount = (tokens) => {
   return tokens.reduce((count, token) => {
@@ -18898,8 +18891,7 @@ var App = () => {
   const outputText = joinOutputTokens(outputWords, targetLanguage, "word");
   const hasTargetText = !!outputText.trim();
   const outputLiteralText = joinOutputTokens(outputWords, targetLanguage, "literal", {
-    forceSpaceSeparated: true,
-    formatToken: (value) => value
+    forceSpaceSeparated: true
   });
   const definitionSelectionWords = import_react7.useMemo(() => getDefinitionSelectionWords(selectedOutputWords, targetLanguage), [selectedOutputWords, targetLanguage]);
   const shouldShowGrammarPane = hasTargetText && hasMultipleOutputWords && definitionSelectionWords.length === 0;
@@ -18945,7 +18937,6 @@ var App = () => {
         if (selection && shouldClearSelection) {
           selection.removeAllRanges();
         }
-        console.log("Received translation response:", words);
         setOutputWords(words);
         clearAudioPlayback();
         setIsAudioLoading(false);
@@ -19279,9 +19270,10 @@ var App = () => {
             const definition = definitionByWord.get(normalizedWord) || "";
             const transliterationKey = normalizedWord || word;
             const rawTransliteration = transliterationByWord.get(transliterationKey) || "";
-            const isCompoundWord = Array.from(word).length > 1;
+            const wordCharacters = Array.from(word);
+            const isCompoundWord = wordCharacters.length > 1;
             const directTransliteration = isCompoundWord ? rawTransliteration : getFormattedLiteral(rawTransliteration, targetLanguage);
-            const isSingleCharacterWord = Array.from(word).length === 1;
+            const isSingleCharacterWord = wordCharacters.length === 1;
             const splitTransliteration = isSingleCharacterWord && isChineseLanguage(targetLanguage) ? getCharacterTransliteration(word, getTransliterationParentWord(word, definitionSelectionWords), transliterationByWord) : "";
             const transliteration = directTransliteration || splitTransliteration;
             const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration;

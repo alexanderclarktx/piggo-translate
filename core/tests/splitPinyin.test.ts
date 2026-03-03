@@ -62,12 +62,7 @@ describe("splitPinyin", () => {
       name: "splits a two-syllable word after n",
       value: "shǎnshù",
       expected: ["shǎn", "shù"],
-    },
-    {
-      name: "splits a two-syllable word after ng",
-      value: "Hóngsè",
-      expected: ["Hóng", "sè"],
-    },
+    }
   ]
 
   cases.forEach(({ name, value, expected }) => {

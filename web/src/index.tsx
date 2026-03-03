@@ -27,17 +27,13 @@ const getFormattedLiteral = (literal: string, targetLanguage: string) => {
 const joinOutputTokens = (
   tokens: WordToken[], targetLanguage: string, tokenKey: "word" | "literal", options?: {
     forceSpaceSeparated?: boolean
-    formatToken?: (value: string) => string
   }
 ) => {
   const useSpaces = options?.forceSpaceSeparated || isSpaceSeparatedLanguage(targetLanguage)
-  const formatToken = tokenKey === "literal"
-    ? (value: string) => options?.formatToken?.(value) || getFormattedLiteral(value, targetLanguage)
-    : (value: string) => value
 
   return tokens.reduce((result, token, tokenIndex) => {
     const rawTokenValue = token[tokenKey]
-    const tokenValue = formatToken(rawTokenValue)
+    const tokenValue = rawTokenValue
 
     if (!tokenValue) return result
 
@@ -124,31 +120,24 @@ const getCharacterTransliteration = (
     return ""
   }
 
-  const matchingCharacterIndexes = parentCharacters
-    .map((parentCharacter, parentCharacterIndex) => parentCharacterIndex)
-    .filter((parentCharacterIndex) => parentCharacters[parentCharacterIndex] === character)
+  const firstMatchingCharacterIndex = parentCharacters.indexOf(character)
 
-  if (matchingCharacterIndexes.length !== 1) {
+  if (
+    firstMatchingCharacterIndex === -1 ||
+    parentCharacters.lastIndexOf(character) !== firstMatchingCharacterIndex
+  ) {
     return ""
   }
 
-  const transliterationIndex = matchingCharacterIndexes[0]
+  const transliterationIndex = firstMatchingCharacterIndex
   return splitLiteral[transliterationIndex]
 }
 
 const getTransliterationParentWord = (character: string, definitionSelectionWords: string[]) => {
-  for (const word of definitionSelectionWords) {
+  return definitionSelectionWords.find((word) => {
     const wordCharacters = Array.from(word)
-    if (wordCharacters.length <= 1) {
-      continue
-    }
-
-    if (wordCharacters.includes(character)) {
-      return word
-    }
-  }
-
-  return ""
+    return wordCharacters.length > 1 && wordCharacters.includes(character)
+  }) || ""
 }
 
 const getNonPunctuationWordCount = (tokens: WordToken[]) => {
@@ -406,8 +395,7 @@ const App = () => {
   const outputText = joinOutputTokens(outputWords, targetLanguage, "word")
   const hasTargetText = !!outputText.trim()
   const outputLiteralText = joinOutputTokens(outputWords, targetLanguage, "literal", {
-    forceSpaceSeparated: true,
-    formatToken: (value) => value
+    forceSpaceSeparated: true
   })
   const definitionSelectionWords = useMemo(
     () => getDefinitionSelectionWords(selectedOutputWords, targetLanguage),
@@ -468,8 +456,6 @@ const App = () => {
         if (selection && shouldClearSelection) {
           selection.removeAllRanges()
         }
-
-        console.log("Received translation response:", words)
 
         setOutputWords(words)
         clearAudioPlayback()
@@ -862,11 +848,12 @@ const App = () => {
           const definition = definitionByWord.get(normalizedWord) || ""
           const transliterationKey = normalizedWord || word
           const rawTransliteration = transliterationByWord.get(transliterationKey) || ""
-          const isCompoundWord = Array.from(word).length > 1
+          const wordCharacters = Array.from(word)
+          const isCompoundWord = wordCharacters.length > 1
           const directTransliteration = isCompoundWord
             ? rawTransliteration
             : getFormattedLiteral(rawTransliteration, targetLanguage)
-          const isSingleCharacterWord = Array.from(word).length === 1
+          const isSingleCharacterWord = wordCharacters.length === 1
           const splitTransliteration = isSingleCharacterWord && isChineseLanguage(targetLanguage)
             ? getCharacterTransliteration(
               word,

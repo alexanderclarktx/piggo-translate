@@ -198,26 +198,6 @@ export const createApiServer = () => {
 
   const openAiTranslator = OpenAiTranslator()
 
-  const translateWithOpenAi = async (text: string, targetLanguage: string) => {
-    return openAiTranslator.translate(text, targetLanguage)
-  }
-
-  const getDefinitionsWithOpenAi = async (
-    word: string,
-    targetLanguage: string,
-    context: string
-  ) => {
-    return openAiTranslator.getDefinitions(word, targetLanguage, context)
-  }
-
-  const getAudioWithOpenAi = async (text: string, targetLanguage: string) => {
-    return openAiTranslator.getAudio(text, targetLanguage)
-  }
-
-  const getGrammarWithOpenAi = async (text: string, targetLanguage: string) => {
-    return openAiTranslator.getGrammar(text, targetLanguage)
-  }
-
   const server = Bun.serve({
     port: 5001,
     async fetch(request, serverInstance) {
@@ -273,7 +253,7 @@ export const createApiServer = () => {
 
         if (parsedMessage.type === "translate.request") {
           try {
-            const translatedOutput = await translateWithOpenAi(
+            const translatedOutput = await openAiTranslator.translate(
               parsedMessage.text,
               parsedMessage.targetLanguage
             )
@@ -286,8 +266,6 @@ export const createApiServer = () => {
                 literal: stripWhitespace(word.literal)
               }))
             }))
-            console.log(translatedOutput.words.map((word) => word.literal))
-            console.log(translatedOutput.words.map((word) => stripWhitespace(word.literal)))
           } catch (error) {
             logServerError(`WS translate ${parsedMessage.requestId}`, error)
 
@@ -306,7 +284,7 @@ export const createApiServer = () => {
 
         if (parsedMessage.type === "translate.audio.request") {
           try {
-            const audioBlob = await getAudioWithOpenAi(
+            const audioBlob = await openAiTranslator.getAudio(
               parsedMessage.text,
               parsedMessage.targetLanguage
             )
@@ -336,7 +314,7 @@ export const createApiServer = () => {
 
         if (parsedMessage.type === "translate.grammar.request") {
           try {
-            const grammar = await getGrammarWithOpenAi(
+            const grammar = await openAiTranslator.getGrammar(
               parsedMessage.text,
               parsedMessage.targetLanguage
             )
@@ -363,7 +341,7 @@ export const createApiServer = () => {
         }
 
         try {
-          const definitions = await getDefinitionsWithOpenAi(
+          const definitions = await openAiTranslator.getDefinitions(
             parsedMessage.word,
             parsedMessage.targetLanguage,
             parsedMessage.context
