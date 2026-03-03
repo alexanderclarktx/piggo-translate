@@ -3,7 +3,7 @@ import {
   Transliteration, normalizeText, normalizeDefinition, Cache, AudioCache, GrammarCache,
   Client, RequestSnapshot, isLocal, isMobile, readTargetLanguage, writeTargetLanguage
 } from "@piggo-translate/web"
-import { Languages, WordDefinition, WordToken } from "@piggo-translate/core"
+import { Languages, WordDefinition, WordToken, splitPinyin } from "@piggo-translate/core"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 
@@ -87,6 +87,54 @@ const getDefinitionSelectionWords = (selectedWords: string[], targetLanguage: st
   })
 
   return Array.from(new Set(expandedWords))
+}
+
+const getCharacterTransliteration = (
+  character: string,
+  parentWord: string,
+  transliterations: Map<string, string>
+) => {
+  if (Array.from(character).length !== 1) {
+    return ""
+  }
+
+  const transliteration = transliterations.get(parentWord)
+  if (!transliteration) {
+    return ""
+  }
+
+  const parentCharacters = Array.from(parentWord)
+  const splitLiteral = splitPinyin(transliteration)
+
+  if (parentCharacters.length <= 1 || splitLiteral.length !== parentCharacters.length) {
+    return ""
+  }
+
+  const matchingCharacterIndexes = parentCharacters
+    .map((parentCharacter, parentCharacterIndex) => parentCharacterIndex)
+    .filter((parentCharacterIndex) => parentCharacters[parentCharacterIndex] === character)
+
+  if (matchingCharacterIndexes.length !== 1) {
+    return ""
+  }
+
+  const transliterationIndex = matchingCharacterIndexes[0]
+  return splitLiteral[transliterationIndex]
+}
+
+const getTransliterationParentWord = (character: string, definitionSelectionWords: string[]) => {
+  for (const word of definitionSelectionWords) {
+    const wordCharacters = Array.from(word)
+    if (wordCharacters.length <= 1) {
+      continue
+    }
+
+    if (wordCharacters.includes(character)) {
+      return word
+    }
+  }
+
+  return ""
 }
 
 const getNonPunctuationWordCount = (tokens: WordToken[]) => {
@@ -692,7 +740,6 @@ const App = () => {
 
     return transliterations
   }, new Map<string, string>())
-
   return (
     <main>
       <section ref={headerSectionRef} style={{
@@ -799,7 +846,16 @@ const App = () => {
           const normalizedWord = normalizeDefinition(word)
           const definition = definitionByWord.get(normalizedWord) || ""
           const transliterationKey = normalizedWord || word
-          const transliteration = transliterationByWord.get(transliterationKey) || ""
+          const directTransliteration = transliterationByWord.get(transliterationKey) || ""
+          const isSingleCharacterWord = Array.from(word).length === 1
+          const splitTransliteration = isSingleCharacterWord && isChineseLanguage(targetLanguage)
+            ? getCharacterTransliteration(
+              word,
+              getTransliterationParentWord(word, definitionSelectionWords),
+              transliterationByWord
+            )
+            : ""
+          const transliteration = directTransliteration || splitTransliteration
           const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration
           const definitionPrefix = shouldShowTransliterationPrefix
             ? `${word} (${transliteration})`
