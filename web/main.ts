@@ -1,4 +1,3 @@
-export * from './src/components/ModelSwitch'
 export * from './src/components/DefinitionPane'
 export * from './src/components/GrammarPane'
 export * from './src/components/InputPane'

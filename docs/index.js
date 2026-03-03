@@ -17100,8 +17100,6 @@ var require_client = __commonJS((exports, module) => {
   }
 });
 
-// src/components/ModelSwitch.tsx
-var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
 // src/components/DefinitionPane.tsx
 var import_react = __toESM(require_react(), 1);
 
@@ -17208,7 +17206,7 @@ var getAnimatedSelectableTokens = (targetTokens, animatedText, shouldUseWordJoin
 };
 
 // src/components/DefinitionPane.tsx
-var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
 var definitionSeparator = " — ";
 var splitDefinitionValue = (value) => {
   const separatorIndex = value.indexOf(definitionSeparator);
@@ -17291,25 +17289,25 @@ var DefinitionPane = ({
       window.clearTimeout(timeoutId);
     };
   }, [desiredText, text]);
-  return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("section", {
+  return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("section", {
     className: paneClassName,
     "aria-labelledby": showHeader ? id : undefined,
     "aria-label": showHeader ? undefined : ariaLabel,
     children: [
-      showHeader ? /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+      showHeader ? /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
         className: "definition-pane-header",
-        children: /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
+        children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("h2", {
           id,
           children: title
         }, undefined, false, undefined, this)
       }, undefined, false, undefined, this) : null,
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
         className: "definition-pane-text-content definition-pane-text-content-selectable",
         role: "textbox",
         "aria-label": ariaLabel,
         children: [
           prefixText,
-          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("span", {
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
             className: `definition-pane-value-fade-in${isFadeVisible ? " is-visible" : ""}`,
             children: `${desiredText}`
           }, fadeVersion, false, undefined, this)
@@ -17320,7 +17318,7 @@ var DefinitionPane = ({
 };
 // src/components/GrammarPane.tsx
 var import_react2 = __toESM(require_react(), 1);
-var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
 var GrammarPane = ({
   id,
   title,
@@ -17367,19 +17365,19 @@ var GrammarPane = ({
       window.clearTimeout(timeoutId);
     };
   }, [desiredText, text]);
-  return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("section", {
+  return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("section", {
     className: paneClassName,
     "aria-labelledby": showHeader ? id : undefined,
     "aria-label": showHeader ? undefined : ariaLabel,
     children: [
-      showHeader ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+      showHeader ? /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
         className: "grammar-pane-header",
-        children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("h2", {
+        children: /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
           id,
           children: title
         }, undefined, false, undefined, this)
       }, undefined, false, undefined, this) : null,
-      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
+      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
         className: "grammar-pane-text-content grammar-pane-text-content-selectable",
         role: "textbox",
         "aria-label": ariaLabel,
@@ -17390,7 +17388,7 @@ var GrammarPane = ({
 };
 // src/components/InputPane.tsx
 var import_react3 = __toESM(require_react(), 1);
-var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
 var InputPane = ({ id, title, placeholder, ariaLabel, value, maxLength, className, afterTextarea, footer, autoFocus, onChange, showHeader, textareaRef }) => {
   const localTextareaRef = import_react3.useRef(null);
   const [text, setText] = import_react3.useState(value);
@@ -17405,19 +17403,19 @@ var InputPane = ({ id, title, placeholder, ariaLabel, value, maxLength, classNam
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
   }, [text]);
-  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("section", {
+  return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("section", {
     className: paneClassName,
     "aria-labelledby": showHeader ? id : undefined,
     "aria-label": showHeader ? undefined : ariaLabel,
     children: [
-      showHeader ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+      showHeader ? /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("div", {
         className: "input-pane-header",
-        children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("h2", {
+        children: /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("h2", {
           id,
           children: title
         }, undefined, false, undefined, this)
       }, undefined, false, undefined, this) : null,
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("textarea", {
+      /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("textarea", {
         ref: (node) => {
           localTextareaRef.current = node;
           if (textareaRef) {
@@ -17449,7 +17447,7 @@ var InputPane = ({ id, title, placeholder, ariaLabel, value, maxLength, classNam
 };
 // src/components/OutputPane.tsx
 var import_react4 = __toESM(require_react(), 1);
-var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
 var OutputPane = ({
   id,
   title,
@@ -17695,19 +17693,19 @@ var OutputPane = ({
       }
     };
   }, []);
-  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("section", {
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("section", {
     className: paneClassName,
     "aria-labelledby": showHeader ? id : undefined,
     "aria-label": showHeader ? undefined : ariaLabel,
     children: [
-      showHeader ? /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+      showHeader ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
         className: "output-pane-header",
-        children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("h2", {
+        children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("h2", {
           id,
           children: title
         }, undefined, false, undefined, this)
       }, undefined, false, undefined, this) : null,
-      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
         ref: textContentRef,
         className: "output-pane-text-content output-pane-text-content-selectable",
         role: "textbox",
@@ -17722,9 +17720,9 @@ var OutputPane = ({
             isWhitespaceToken ? "output-pane-text-token-space" : "",
             isSelectableToken ? "output-pane-text-token-selectable" : "output-pane-text-token-nonselectable"
           ].filter(Boolean).join(" ");
-          return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
+          return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
             children: [
-              /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
+              /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
                 className: tokenClassName,
                 "data-selection-word": isSelectableToken ? selectionWord : "",
                 onPointerDown: (event) => {
@@ -17742,10 +17740,10 @@ var OutputPane = ({
         })
       }, undefined, false, undefined, this),
       footer ? footer : null,
-      enableCopyButton || enableAudioButton ? /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+      enableCopyButton || enableAudioButton ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
         className: "output-pane-actions",
         children: [
-          enableAudioButton ? /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+          enableAudioButton ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
             type: "button",
             className: `output-pane-action-button${isAudioLoading ? " output-pane-action-button-loading" : ""}`,
             "aria-label": "Generate speech audio",
@@ -17757,26 +17755,26 @@ var OutputPane = ({
             onClick: () => {
               onAudioClick?.();
             },
-            children: isAudioLoading ? /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
+            children: isAudioLoading ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
               className: "spinner output-pane-action-spinner",
               "aria-hidden": "true"
-            }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("svg", {
+            }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
               viewBox: "0 0 24 24",
               "aria-hidden": "true",
               children: [
-                /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("path", {
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
                   d: "M11 5 6 9H3v6h3l5 4V5Z"
                 }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("path", {
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
                   d: "M15 9.5a4 4 0 0 1 0 5"
                 }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("path", {
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
                   d: "M18 7a8 8 0 0 1 0 10"
                 }, undefined, false, undefined, this)
               ]
             }, undefined, true, undefined, this)
           }, undefined, false, undefined, this) : null,
-          shouldRenderCopyButton ? /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+          shouldRenderCopyButton ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
             type: "button",
             className: `output-pane-action-button${didCopy ? " output-pane-copy-button-copied" : ""}${isCopySelected ? " output-pane-copy-button-selected" : ""}`,
             "aria-label": "Copy output text",
@@ -17804,14 +17802,14 @@ var OutputPane = ({
                 setDidCopy(false);
               }, 1000);
             },
-            children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("svg", {
+            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("svg", {
               viewBox: "0 0 24 24",
               "aria-hidden": "true",
               children: [
-                /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("path", {
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
                   d: "M8 8h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z"
                 }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("path", {
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("path", {
                   d: "M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"
                 }, undefined, false, undefined, this)
               ]
@@ -17824,12 +17822,12 @@ var OutputPane = ({
 };
 // src/components/TargetLanguageDropdown.tsx
 var import_react5 = __toESM(require_react(), 1);
-var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
 var TargetLanguageDropdown = ({ options, targetLanguage, onSelect }) => {
   const selectedLanguageLabel = options.find((option) => option.value === targetLanguage)?.label || targetLanguage;
   const unselectedOptions = options.filter((option) => option.value !== targetLanguage);
   const [isDismissed, setIsDismissed] = import_react5.useState(true);
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("section", {
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("section", {
     className: `input-pane-language-menu${isDismissed ? " input-pane-language-menu-dismissed" : ""}`,
     "aria-label": "Target language selector",
     onPointerLeave: (x) => {
@@ -17838,7 +17836,7 @@ var TargetLanguageDropdown = ({ options, targetLanguage, onSelect }) => {
       setIsDismissed(true);
     },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
         type: "button",
         className: "input-pane-target-language fade-in",
         onPointerEnter: () => {
@@ -17851,12 +17849,12 @@ var TargetLanguageDropdown = ({ options, targetLanguage, onSelect }) => {
         },
         children: selectedLanguageLabel
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
         className: "input-pane-target-language-dropdown",
         role: "listbox",
         "aria-label": "Select target language",
         children: unselectedOptions.map((option) => {
-          return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+          return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
             type: "button",
             role: "option",
             "aria-selected": false,
@@ -17875,7 +17873,7 @@ var TargetLanguageDropdown = ({ options, targetLanguage, onSelect }) => {
 };
 // src/components/Transliteration.tsx
 var import_react6 = __toESM(require_react(), 1);
-var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
 var transliterationAnimationMinIntervalMs = 15;
 var transliterationAnimationMaxIntervalMs = 55;
 var transliterationAnimationFastThreshold = 28;
@@ -17936,7 +17934,7 @@ var Transliteration = ({ value, isVisible, onToggle }) => {
       window.clearTimeout(timeoutId);
     };
   }, [desiredText, text]);
-  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
     type: "button",
     className: `transliteration-box${isExpanded ? "" : " is-collapsed"}${hasValue ? " has-value" : ""} fade-in`,
     "aria-label": !hasValue ? "No transliteration available" : isExpanded ? "Hide transliteration" : "Show transliteration",
@@ -17945,10 +17943,10 @@ var Transliteration = ({ value, isVisible, onToggle }) => {
     disabled: !hasValue,
     onClick: onToggle,
     children: [
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
         className: `transliteration-collapsed-label${hasValue && !isExpanded ? " is-visible" : ""}`
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("p", {
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
         className: `pane-footer transliteration-text transliteration-panel${isExpanded ? " is-visible" : ""}`,
         children: text
       }, undefined, false, undefined, this)
@@ -18066,14 +18064,14 @@ var normalizeText3 = (text) => text.replace(/\s+/g, " ").trim();
 var getTranslateWsUrl = () => {
   return isLocal() ? "http://localhost:5001/api/ws" : "https://piggo-translate-production.up.railway.app/api/ws";
 };
-var getRequestSignature = ({ text, targetLanguage, model }) => {
-  return `${model}::${normalizeText3(text)}::${targetLanguage}`;
+var getRequestSignature = ({ text, targetLanguage }) => {
+  return `${normalizeText3(text)}::${targetLanguage}`;
 };
-var getDefinitionRequestSignature = (word, context, targetLanguage, model) => {
-  return `${model}::${targetLanguage}::${normalizeDefinition(word)}::${normalizeText3(context)}`;
+var getDefinitionRequestSignature = (word, context, targetLanguage) => {
+  return `${targetLanguage}::${normalizeDefinition(word)}::${normalizeText3(context)}`;
 };
-var getGrammarRequestSignature = (text, targetLanguage, model) => {
-  return `${model}::${targetLanguage}::${normalizeText3(text)}`;
+var getGrammarRequestSignature = (text, targetLanguage) => {
+  return `${targetLanguage}::${normalizeText3(text)}`;
 };
 var Client = (options) => {
   let socket = null;
@@ -18155,7 +18153,7 @@ var Client = (options) => {
     if (!normalizedWord || !normalizedContext || !socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
-    const requestSignature = getDefinitionRequestSignature(normalizedWord, normalizedContext, requestInput.targetLanguage, requestInput.model);
+    const requestSignature = getDefinitionRequestSignature(normalizedWord, normalizedContext, requestInput.targetLanguage);
     if (definitionRequestSignaturesInFlight.has(requestSignature)) {
       return;
     }
@@ -18199,7 +18197,7 @@ var Client = (options) => {
     if (!normalizedText || !normalizedTargetLanguage || !socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
-    const requestSignature = getGrammarRequestSignature(normalizedText, normalizedTargetLanguage, requestInput.model);
+    const requestSignature = getGrammarRequestSignature(normalizedText, normalizedTargetLanguage);
     if (requestSignature === latestGrammarRequestSignature) {
       return;
     }
@@ -18446,7 +18444,7 @@ var Languages = [
 // src/index.tsx
 var import_react7 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
-var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
+var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
 var normalizeText4 = (text) => text.replace(/\s+/g, " ").trim();
 var isSpaceSeparatedLanguage = (language) => ![
   "chinese (simplified)",
@@ -18528,7 +18526,6 @@ var App = () => {
   const [debouncedRequest, setDebouncedRequest] = import_react7.useState(null);
   const [targetLanguage, setTargetLanguage] = import_react7.useState(Languages[0].value);
   const [isTargetLanguageLoaded, setIsTargetLanguageLoaded] = import_react7.useState(false);
-  const [selectedModel, setSelectedModel] = import_react7.useState("openai");
   const [selectedOutputWords, setSelectedOutputWords] = import_react7.useState([]);
   const [wordDefinitions, setWordDefinitions] = import_react7.useState([]);
   const [isDefinitionLoading, setIsDefinitionLoading] = import_react7.useState(false);
@@ -18543,7 +18540,6 @@ var App = () => {
   const selectedDefinitionWordsRef = import_react7.useRef([]);
   const definitionContextRef = import_react7.useRef("");
   const targetLanguageRef = import_react7.useRef(targetLanguage);
-  const selectedModelRef = import_react7.useRef(selectedModel);
   const CacheRef = import_react7.useRef(Cache());
   const audioCacheRef = import_react7.useRef(AudioCache());
   const grammarCacheRef = import_react7.useRef(GrammarCache());
@@ -18715,8 +18711,7 @@ var App = () => {
   const setDebouncedTranslateRequest = (text) => {
     setDebouncedRequest({
       text,
-      targetLanguage,
-      model: selectedModel
+      targetLanguage
     });
   };
   import_react7.useEffect(() => {
@@ -18803,9 +18798,6 @@ var App = () => {
   import_react7.useEffect(() => {
     targetLanguageRef.current = targetLanguage;
   }, [targetLanguage]);
-  import_react7.useEffect(() => {
-    selectedModelRef.current = selectedModel;
-  }, [selectedModel]);
   import_react7.useEffect(() => {
     let isDisposed = false;
     (async () => {
@@ -18924,11 +18916,10 @@ var App = () => {
       clientRef.current?.sendDefinitionsRequest({
         word,
         context: outputText,
-        targetLanguage,
-        model: selectedModel
+        targetLanguage
       });
     });
-  }, [definitionSelectionWords, isSocketOpen, outputText, selectedModel, targetLanguage]);
+  }, [definitionSelectionWords, isSocketOpen, outputText, targetLanguage]);
   import_react7.useEffect(() => {
     if (!shouldShowGrammarPane) {
       pendingGrammarRequestTextRef.current = "";
@@ -18948,7 +18939,7 @@ var App = () => {
     if (!isSocketOpen) {
       return;
     }
-  }, [isSocketOpen, outputText, selectedModel, shouldShowGrammarPane, targetLanguage]);
+  }, [isSocketOpen, outputText, shouldShowGrammarPane, targetLanguage]);
   const definitionByWord = new Map(wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition]));
   const transliterationByWord = outputWords.reduce((transliterations, { word, punctuation, literal }) => {
     if (punctuation || !literal) {
@@ -18960,9 +18951,9 @@ var App = () => {
     }
     return transliterations;
   }, new Map);
-  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("main", {
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("main", {
     children: [
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("section", {
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("section", {
         ref: headerSectionRef,
         style: {
           display: "flex",
@@ -18973,34 +18964,34 @@ var App = () => {
           left: "50%"
         },
         children: [
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("img", {
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("img", {
             src: "favicon.svg",
             alt: "",
             "aria-hidden": "true",
             className: "title-icon fade-in",
             draggable: false
           }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("p", {
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("p", {
             className: "header-title",
             children: "Piggo Translate"
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("section", {
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("section", {
         ref: paneStackRef,
         className: "pane-stack",
         "aria-label": "Translator workspace",
         children: [
-          !isSocketOpen && isConnectionDotDelayComplete ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
+          !isSocketOpen && isConnectionDotDelayComplete ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
             className: "pane-stack-connection-dot fade-in",
             "aria-hidden": "true"
           }, undefined, false, undefined, this) : null,
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(TargetLanguageDropdown, {
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(TargetLanguageDropdown, {
             options: Languages,
             targetLanguage,
             onSelect: setTargetLanguage
           }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(InputPane, {
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(InputPane, {
             id: "input-pane-title",
             title: "Input",
             showHeader: false,
@@ -19011,13 +19002,13 @@ var App = () => {
             autoFocus: true,
             textareaRef: inputTextareaRef,
             onChange: setInputText,
-            afterTextarea: hasInputText && isSpinnerVisible ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
+            afterTextarea: hasInputText && isSpinnerVisible ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
               className: "spinner input-pane-spinner",
               "aria-hidden": "true"
             }, undefined, false, undefined, this) : null,
             className: "fade-in"
           }, undefined, false, undefined, this),
-          hasOutputWords ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(OutputPane, {
+          hasOutputWords ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(OutputPane, {
             id: "output-pane-title",
             title: "Translated Output",
             showHeader: false,
@@ -19030,7 +19021,7 @@ var App = () => {
             })),
             selectionWordJoiner: isSpaceSeparatedLanguage(targetLanguage) ? " " : "",
             animateOnMount: true,
-            footer: selectedLanguageOption?.transliterate ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Transliteration, {
+            footer: selectedLanguageOption?.transliterate ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Transliteration, {
               value: outputLiteralText,
               isVisible: isTransliterationVisible,
               onToggle: () => setIsTransliterationVisible((value) => !value)
@@ -19051,14 +19042,13 @@ var App = () => {
               pendingAudioRequestTextRef.current = outputText;
               clientRef.current?.sendAudioRequest({
                 text: outputText,
-                targetLanguage,
-                model: selectedModelRef.current
+                targetLanguage
               });
             },
             className: "fade-in",
             onSelectionChange: setSelectedOutputWords
           }, undefined, false, undefined, this) : null,
-          shouldShowGrammarPane && (isGrammarLoading || !!grammarExplanation) ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(GrammarPane, {
+          shouldShowGrammarPane && (isGrammarLoading || !!grammarExplanation) ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(GrammarPane, {
             id: "grammar-pane-title",
             title: "",
             showHeader: false,
@@ -19075,7 +19065,7 @@ var App = () => {
             const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration;
             const definitionPrefix = shouldShowTransliterationPrefix ? `${word} (${transliteration})` : word;
             const paneValue = definition ? `${definitionPrefix} — ${definition}` : word;
-            return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(DefinitionPane, {
+            return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(DefinitionPane, {
               id: `definition-pane-${index}-title`,
               title: "",
               showHeader: false,
@@ -19087,7 +19077,7 @@ var App = () => {
           })
         ]
       }, undefined, true, undefined, this),
-      isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
+      isLocal() && !isMobile() && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         className: "app-version",
         "aria-label": "App version",
         children: "v0.4.1"
@@ -19099,4 +19089,4 @@ var rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Missing root div with id 'root'");
 }
-import_client.createRoot(rootElement).render(/* @__PURE__ */ jsx_dev_runtime8.jsxDEV(App, {}, undefined, false, undefined, this));
+import_client.createRoot(rootElement).render(/* @__PURE__ */ jsx_dev_runtime7.jsxDEV(App, {}, undefined, false, undefined, this));

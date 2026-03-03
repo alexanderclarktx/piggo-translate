@@ -3,7 +3,7 @@ import {
   Transliteration, normalizeDefinition, Cache, AudioCache, GrammarCache,
   Client, RequestSnapshot, isLocal, isMobile, readTargetLanguage, writeTargetLanguage
 } from "@piggo-translate/web"
-import { Languages, Model, WordDefinition, WordToken } from "@piggo-translate/core"
+import { Languages, WordDefinition, WordToken } from "@piggo-translate/core"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 
@@ -117,11 +117,9 @@ const App = () => {
   const [debouncedRequest, setDebouncedRequest] = useState<{
     text: string
     targetLanguage: string
-    model: Model
   } | null>(null)
   const [targetLanguage, setTargetLanguage] = useState(Languages[0].value)
   const [isTargetLanguageLoaded, setIsTargetLanguageLoaded] = useState(false)
-  const [selectedModel, setSelectedModel] = useState<Model>("openai")
   const [selectedOutputWords, setSelectedOutputWords] = useState<string[]>([])
   const [wordDefinitions, setWordDefinitions] = useState<WordDefinition[]>([])
   const [isDefinitionLoading, setIsDefinitionLoading] = useState(false)
@@ -136,7 +134,6 @@ const App = () => {
   const selectedDefinitionWordsRef = useRef<string[]>([])
   const definitionContextRef = useRef("")
   const targetLanguageRef = useRef(targetLanguage)
-  const selectedModelRef = useRef(selectedModel)
   const CacheRef = useRef(Cache())
   const audioCacheRef = useRef(AudioCache())
   const grammarCacheRef = useRef(GrammarCache())
@@ -352,8 +349,7 @@ const App = () => {
   const setDebouncedTranslateRequest = (text: string) => {
     setDebouncedRequest({
       text,
-      targetLanguage,
-      model: selectedModel
+      targetLanguage
     })
   }
 
@@ -448,10 +444,6 @@ const App = () => {
   useEffect(() => {
     targetLanguageRef.current = targetLanguage
   }, [targetLanguage])
-
-  useEffect(() => {
-    selectedModelRef.current = selectedModel
-  }, [selectedModel])
 
   useEffect(() => {
     let isDisposed = false
@@ -611,11 +603,10 @@ const App = () => {
       clientRef.current?.sendDefinitionsRequest({
         word,
         context: outputText,
-        targetLanguage,
-        model: selectedModel
+        targetLanguage
       })
     })
-  }, [definitionSelectionWords, isSocketOpen, outputText, selectedModel, targetLanguage])
+  }, [definitionSelectionWords, isSocketOpen, outputText, targetLanguage])
 
   useEffect(() => {
     if (!shouldShowGrammarPane) {
@@ -643,10 +634,9 @@ const App = () => {
     // pendingGrammarRequestTextRef.current = outputText
     // clientRef.current?.sendGrammarRequest({
     //   text: outputText,
-    //   targetLanguage,
-    //   model: selectedModel
+    //   targetLanguage
     // })
-  }, [isSocketOpen, outputText, selectedModel, shouldShowGrammarPane, targetLanguage])
+  }, [isSocketOpen, outputText, shouldShowGrammarPane, targetLanguage])
 
   const definitionByWord = new Map(
     wordDefinitions.map((entry) => [normalizeDefinition(entry.word), entry.definition])
@@ -747,8 +737,7 @@ const App = () => {
               pendingAudioRequestTextRef.current = outputText
               clientRef.current?.sendAudioRequest({
                 text: outputText,
-                targetLanguage,
-                model: selectedModelRef.current
+                targetLanguage
               })
             }}
             className="fade-in"
