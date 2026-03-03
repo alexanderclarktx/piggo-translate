@@ -40,6 +40,36 @@ const isPinyinConsonant = (character: string) => {
   return !isPinyinVowel(character) && /[a-zA-Z]/.test(character)
 }
 
+const isPinyinSyllableBoundary = (token: string, index: number) => {
+  if (index < 1 || index >= token.length - 1) return false
+
+  const previousCharacter = token[index - 1]
+  const currentCharacter = token[index]
+  const nextCharacter = token[index + 1]
+  const nextNextCharacter = token[index + 2]
+
+  const isNextCharacterStartOfSyllable = isPinyinVowel(nextCharacter) ||
+    ((currentCharacter === "s" || currentCharacter === "z" || currentCharacter === "c") &&
+    nextCharacter === "h" &&
+    isPinyinVowel(nextNextCharacter))
+
+  if (!isPinyinConsonant(currentCharacter) || !isNextCharacterStartOfSyllable) {
+    return false
+  }
+
+  if (isPinyinVowel(previousCharacter)) return true
+
+  if (previousCharacter === "n") {
+    return isPinyinVowel(token[index - 2] || "")
+  }
+
+  if (previousCharacter === "g") {
+    return token[index - 2] === "n" && isPinyinVowel(token[index - 3] || "")
+  }
+
+  return false
+}
+
 export const splitPinyin = (value: string): string[] => {
   const trimmedValue = value.trim()
 
@@ -79,8 +109,9 @@ export const splitPinyin = (value: string): string[] => {
       previousCharacter === currentCharacter &&
       isPinyinConsonant(previousCharacter) &&
       isPinyinConsonant(currentCharacter)
+    const isBoundary = isPinyinSyllableBoundary(token, index)
 
-    if (isDoubleConsonant) {
+    if (isDoubleConsonant || isBoundary) {
       splitAt.push(index)
       sawFirstVowel = false
     }
