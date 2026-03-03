@@ -406,6 +406,8 @@ const App = () => {
           selection.removeAllRanges()
         }
 
+        console.log("Received translation response:", words)
+
         setOutputWords(words)
         clearAudioPlayback()
         setIsAudioLoading(false)
