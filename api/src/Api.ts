@@ -1,5 +1,4 @@
-import { httpJson, httpText } from "./utils/HttpUtils"
-import { OpenAiTranslator } from "./translate/OpenAiTranslator"
+import { httpJson, httpText, OpenAiTranslator } from "@piggo-translate/api"
 
 const logServerError = (context: string, error: unknown) => {
   if (error instanceof Error) {
@@ -13,13 +12,9 @@ const logServerError = (context: string, error: unknown) => {
   console.error(`[api] ${context}:`, error)
 }
 
-const normalizeTranslateInput = (
-  text: unknown,
-  targetLanguage: unknown
-) => {
+const normalizeTranslateInput = (text: unknown, targetLanguage: unknown) => {
   const normalizedText = typeof text === "string" ? text.trim() : ""
-  const normalizedTargetLanguage =
-    typeof targetLanguage === "string" ? targetLanguage.trim() : ""
+  const normalizedTargetLanguage = typeof targetLanguage === "string" ? targetLanguage.trim() : ""
 
   return {
     text: normalizedText,
