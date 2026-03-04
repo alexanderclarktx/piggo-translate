@@ -333,12 +333,12 @@ main {
   justify-content: center;
   background: transparent;
   color: rgba(16, 24, 32, 0.78);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(-2px) scale(0.8);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
   cursor: default;
-  transition: opacity 300ms ease, transform 300ms ease, color 120ms ease, visibility 0s linear 300ms;
+  transition: opacity 300ms ease, transform 300ms ease, color 120ms ease, visibility 0s linear 0s;
 }
 
 .output-pane:hover .output-pane-action-button,
