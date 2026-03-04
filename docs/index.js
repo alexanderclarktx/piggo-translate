@@ -18446,32 +18446,42 @@ var writeTargetLanguage = async (targetLanguage) => {
 var isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 var isLocal = () => window.location.hostname === "localhost";
 // ../core/src/Languages.ts
-var languageCodeToValue = {
-  zh: "Chinese (simplified)",
-  en: "English",
-  es: "Spanish",
-  ja: "Japanese",
-  ru: "Russian",
-  fr: "French"
-};
-var languageValueToCode = {
-  "chinese (simplified)": "zh",
-  english: "en",
-  spanish: "es",
-  japanese: "ja",
-  russian: "ru",
-  french: "fr"
-};
-var isLanguageCode = (value) => (value in languageCodeToValue);
-var isNormalizedLanguageValue = (value) => (value in languageValueToCode);
 var Languages = [
-  { label: "Chinese", value: "Chinese (simplified)", transliterate: true },
-  { label: "English", value: "English", transliterate: false },
-  { label: "Spanish", value: "Spanish", transliterate: false },
-  { label: "Japanese", value: "Japanese", transliterate: true },
-  { label: "Russian", value: "Russian", transliterate: true },
-  { label: "French", value: "French", transliterate: false }
+  { code: "zh", label: "Chinese", value: "Chinese (simplified)", transliterate: true },
+  { code: "en", label: "English", value: "English", transliterate: false },
+  { code: "es", label: "Spanish", value: "Spanish", transliterate: false },
+  { code: "ja", label: "Japanese", value: "Japanese", transliterate: true },
+  { code: "ru", label: "Russian", value: "Russian", transliterate: true },
+  { code: "fr", label: "French", value: "French", transliterate: false }
 ];
+var isLanguageCode = (value) => {
+  return ["zh", "en", "es", "ja", "ru", "fr"].includes(value);
+};
+var languageCodeToValue = (code) => {
+  const map = {
+    zh: "Chinese (simplified)",
+    en: "English",
+    es: "Spanish",
+    ja: "Japanese",
+    ru: "Russian",
+    fr: "French"
+  };
+  return map[code];
+};
+var languageValueToCode = (value) => {
+  const map = {
+    "chinese (simplified)": "zh",
+    english: "en",
+    spanish: "es",
+    japanese: "ja",
+    russian: "ru",
+    french: "fr"
+  };
+  return map[value];
+};
+var isLanguageValueLower = (value) => {
+  return ["chinese (simplified)", "english", "spanish", "japanese", "russian", "french"].includes(value);
+};
 var pinyinToneMarkedVowels = new Set([
   "a",
   "ā",
@@ -18652,7 +18662,7 @@ var getLanguageFromParam = (rawLanguageValue) => {
     return "";
   }
   const normalizedValue = rawLanguageValue.trim().toLowerCase();
-  const languageByCode = isLanguageCode(normalizedValue) ? languageCodeToValue[normalizedValue] : undefined;
+  const languageByCode = isLanguageCode(normalizedValue) ? languageCodeToValue(normalizedValue) : undefined;
   if (languageByCode) {
     return languageByCode;
   }
@@ -18665,7 +18675,7 @@ var getLanguageFromParam = (rawLanguageValue) => {
 };
 var getLanguageParamValue = (language) => {
   const normalizedLanguage = language.trim().toLowerCase();
-  const languageCode = isNormalizedLanguageValue(normalizedLanguage) ? languageValueToCode[normalizedLanguage] : undefined;
+  const languageCode = isLanguageValueLower(normalizedLanguage) ? languageValueToCode(normalizedLanguage) : undefined;
   if (languageCode) {
     return languageCode;
   }

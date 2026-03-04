@@ -4,8 +4,8 @@ import {
   Client, RequestSnapshot, isLocal, isMobile, readTargetLanguage, writeTargetLanguage
 } from "@piggo-translate/web"
 import {
-  Languages, WordDefinition, WordToken, splitPinyin, languageCodeToValue, languageValueToCode,
-  isLanguageCode, isNormalizedLanguageValue
+  Languages, WordDefinition, WordToken, splitPinyin, isLanguageCode, isLanguageValueLower,
+  languageCodeToValue, languageValueToCode, LanguageCode, LanguageValueLower
 } from "@piggo-translate/core"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
@@ -48,7 +48,7 @@ const getLanguageFromParam = (rawLanguageValue: string) => {
 
   const normalizedValue = rawLanguageValue.trim().toLowerCase()
   const languageByCode = isLanguageCode(normalizedValue)
-    ? languageCodeToValue[normalizedValue]
+    ? languageCodeToValue(normalizedValue as LanguageCode)
     : undefined
 
   if (languageByCode) {
@@ -66,8 +66,8 @@ const getLanguageFromParam = (rawLanguageValue: string) => {
 
 const getLanguageParamValue = (language: string) => {
   const normalizedLanguage = language.trim().toLowerCase()
-  const languageCode = isNormalizedLanguageValue(normalizedLanguage)
-    ? languageValueToCode[normalizedLanguage]
+  const languageCode = isLanguageValueLower(normalizedLanguage)
+    ? languageValueToCode(normalizedLanguage as LanguageValueLower)
     : undefined
 
   if (languageCode) {
@@ -915,11 +915,11 @@ const App = () => {
             selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
             animateOnMount
             footer={selectedLanguageOption?.transliterate ? (
-                <Transliteration
-                  value={outputLiteralText}
-                  isVisible={isTransliterationVisible}
-                  onToggle={() => setIsTransliterationVisible((value) => !value)}
-                />
+              <Transliteration
+                value={outputLiteralText}
+                isVisible={isTransliterationVisible}
+                onToggle={() => setIsTransliterationVisible((value) => !value)}
+              />
             ) : null}
             enableCopyButton
             copyValue={outputText}
