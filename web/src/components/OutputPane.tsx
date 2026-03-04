@@ -406,7 +406,7 @@ const OutputPane = ({
           {enableAudioButton ? (
             <button
               type="button"
-              className={`output-pane-action-button${isAudioLoading ? " output-pane-action-button-loading" : ""}`}
+              className={`output-pane-action-button output-pane-audio-button${isAudioLoading ? " output-pane-action-button-loading" : ""}`}
               aria-label="Generate speech audio"
               title={isAudioLoading ? "Generating audio..." : "Speak"}
               disabled={!!isAudioLoading}
