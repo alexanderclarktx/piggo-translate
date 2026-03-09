@@ -4,10 +4,10 @@ import {
   Client, RequestSnapshot, isLocal, isMobile, readTargetLanguage, writeTargetLanguage
 } from "@piggo-translate/web"
 import {
-  Languages, WordDefinition, WordToken, splitPinyin, isLanguageCode, isLanguageValueLower,
-  languageCodeToValue, languageValueToCode, LanguageCode, LanguageValueLower
+  Hsk1Characters, Languages, WordDefinition, WordToken, splitPinyin, isLanguageCode,
+  isLanguageValueLower, languageCodeToValue, languageValueToCode, LanguageCode, LanguageValueLower
 } from "@piggo-translate/core"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { startTransition, useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 
 const isSpaceSeparatedLanguage = (language: string) => ![
@@ -228,6 +228,9 @@ const getNonPunctuationWordCount = (tokens: WordToken[]) => {
 const App = () => {
   const initialUrlPrefillRef = useRef(getUrlPrefillState())
   const [inputText, setInputText] = useState(() => initialUrlPrefillRef.current.text)
+  const [isPiggoLingoVisible, setIsPiggoLingoVisible] = useState(false)
+  const [titleIconSpinTick, setTitleIconSpinTick] = useState(0)
+  const [isTitleIconSpinning, setIsTitleIconSpinning] = useState(false)
   const [outputWords, setOutputWords] = useState<WordToken[]>([])
   const [isTransliterationVisible, setIsTransliterationVisible] = useState(true)
   const [errorText, setErrorText] = useState("")
@@ -868,141 +871,218 @@ const App = () => {
         flexDirection: "column",
         left: "50%"
       }}>
-        <img src="favicon.svg" alt="" aria-hidden="true" className="title-icon fade-in" draggable={false} />
-        <p className="header-title">Piggo Translate</p>
+        <button
+          type="button"
+          className={`title-icon-button${isTitleIconSpinning ? " title-icon-button-spinning" : ""}`}
+          onClick={() => {
+            setIsTitleIconSpinning(true)
+            setTitleIconSpinTick((value) => value + 1)
+            startTransition(() => {
+              setIsPiggoLingoVisible((value) => !value)
+            })
+          }}
+          aria-label={isPiggoLingoVisible ? "Show Piggo Translate" : "Show Piggo Lingo"}
+          aria-pressed={isPiggoLingoVisible}
+          disabled={isTitleIconSpinning}
+        >
+          <img
+            key={titleIconSpinTick}
+            src="favicon.svg"
+            alt=""
+            aria-hidden="true"
+            className={`title-icon${titleIconSpinTick ? " title-icon-spinning" : ""}`}
+            draggable={false}
+            onAnimationEnd={() => {
+              setIsTitleIconSpinning(false)
+            }}
+          />
+        </button>
+        <p className="header-title" aria-live="polite">
+          <span
+            className={`header-title-text${isPiggoLingoVisible ? "" : " header-title-text-visible"}`}
+            aria-hidden={isPiggoLingoVisible}
+          >
+            Piggo Translate
+          </span>
+          <span
+            className={`header-title-text${isPiggoLingoVisible ? " header-title-text-visible" : ""}`}
+            aria-hidden={!isPiggoLingoVisible}
+          >
+            Piggo Lingo
+          </span>
+        </p>
       </section>
 
-      <section ref={paneStackRef} className="pane-stack" aria-label="Translator workspace">
-        {!isSocketOpen && isConnectionDotDelayComplete ? (
-          <span className="pane-stack-connection-dot fade-in" aria-hidden="true" />
-        ) : null}
+      {isPiggoLingoVisible ? (
+        <section className="pane-stack lingo-character-grid" aria-label="Piggo Lingo HSK1 words">
+          {Hsk1Characters.map(({ id, character, pinyin, definition }) => {
+            const definitionValue = pinyin
+              ? `${character} (${pinyin}) — ${definition}`
+              : `${character} — ${definition}`
 
-        <TargetLanguageDropdown
-          options={Languages}
-          targetLanguage={targetLanguage}
-          onSelect={setTargetLanguage}
-        />
-
-        <InputPane
-          id="input-pane-title"
-          title="Input"
-          showHeader={false}
-          placeholder=""
-          ariaLabel="Text to translate"
-          value={inputText}
-          maxLength={360}
-          autoFocus
-          textareaRef={inputTextareaRef}
-          onChange={setInputText}
-          afterTextarea={hasInputText && isSpinnerVisible ? (
-            <span className="spinner input-pane-spinner" aria-hidden="true" />
-          ) : null}
-          className="fade-in"
-        />
-
-        {hasOutputWords ? (
-          <OutputPane
-            id="output-pane-title"
-            title="Translated Output"
-            showHeader={false}
-            ariaLabel="Translated text"
-            value={outputText}
-            selectionTokens={outputWords.map((token) => ({
-              value: token.word,
-              selectionWord: token.word,
-              selectable: !token.punctuation
-            }))}
-            selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
-            animateOnMount
-            footer={selectedLanguageOption?.transliterate ? (
-              <Transliteration
-                value={outputLiteralText}
-                isVisible={isTransliterationVisible}
-                onToggle={() => setIsTransliterationVisible((value) => !value)}
-              />
-            ) : null}
-            enableCopyButton
-            copyValue={outputText}
-            enableAudioButton={!isAudioPlaying}
-            isAudioLoading={isAudioLoading}
-            onAudioClick={() => {
-              if (!outputText.trim()) {
-                return
-              }
-
-              const cachedAudio = audioCacheRef.current.get(outputText)
-
-              if (cachedAudio) {
-                playAudio(cachedAudio.audioBase64, cachedAudio.mimeType)
-                return
-              }
-
-              pendingAudioRequestTextRef.current = outputText
-              clientRef.current?.sendAudioRequest({
-                text: outputText,
-                targetLanguage
-              })
-            }}
-            className="fade-in"
-            onSelectionChange={setSelectedOutputWords}
-          />
-        ) : null}
-
-        {shouldShowGrammarPane && (isGrammarLoading || !!grammarExplanation) ? (
-          <GrammarPane
-            id="grammar-pane-title"
-            title=""
-            showHeader={false}
-            animateOnMount
-            className="fade-in"
-            ariaLabel="Grammar explanation"
-            value={grammarExplanation}
-          />
-        ) : null}
-
-        {definitionSelectionWords.map((word, index) => {
-          const normalizedWord = normalizeDefinition(word)
-          const definition = definitionByWord.get(normalizedWord) || ""
-          const transliterationKey = normalizedWord || word
-          const rawTransliteration = transliterationByWord.get(transliterationKey) || ""
-          const wordCharacters = Array.from(word)
-          const isCompoundWord = wordCharacters.length > 1
-          const directTransliteration = isCompoundWord
-            ? rawTransliteration
-            : getFormattedLiteral(rawTransliteration, targetLanguage)
-          const isSingleCharacterWord = wordCharacters.length === 1
-          const splitTransliteration = isSingleCharacterWord && isChineseLanguage(targetLanguage)
-            ? getCharacterTransliteration(
-              word,
-              getTransliterationParentWord(word, definitionSelectionWords),
-              transliterationByWord
+            return (
+              <section
+                key={id}
+                className="lingo-character-card input-pane-block fade-in"
+                aria-label={`HSK1 word ${character}`}
+              >
+                <OutputPane
+                  id={`${id}-output`}
+                  title=""
+                  showHeader={false}
+                  ariaLabel={`HSK1 word ${character}`}
+                  value={character}
+                  className="lingo-character-output"
+                  footer={(
+                    <DefinitionPane
+                      id={`${id}-definition`}
+                      title=""
+                      showHeader={false}
+                      animateOnMount
+                      isEmbedded
+                      className="lingo-character-definition"
+                      ariaLabel={`Definition for ${character}`}
+                      value={definitionValue}
+                    />
+                  )}
+                />
+              </section>
             )
-            : ""
-          const transliteration = directTransliteration || splitTransliteration
-          const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration
-          const definitionPrefix = shouldShowTransliterationPrefix
-            ? `${word} (${transliteration})`
-            : word
-          const paneValue = definition ? `${definitionPrefix} — ${definition}` : word
+          })}
+        </section>
+      ) : (
+        <section ref={paneStackRef} className="pane-stack" aria-label="Translator workspace">
+          {!isSocketOpen && isConnectionDotDelayComplete ? (
+            <span className="pane-stack-connection-dot fade-in" aria-hidden="true" />
+          ) : null}
 
-          return (
-            <DefinitionPane
-              key={`definition-pane-${index}`}
-              id={`definition-pane-${index}-title`}
+          <TargetLanguageDropdown
+            options={Languages}
+            targetLanguage={targetLanguage}
+            onSelect={setTargetLanguage}
+          />
+
+          <InputPane
+            id="input-pane-title"
+            title="Input"
+            showHeader={false}
+            placeholder=""
+            ariaLabel="Text to translate"
+            value={inputText}
+            maxLength={360}
+            autoFocus
+            textareaRef={inputTextareaRef}
+            onChange={setInputText}
+            afterTextarea={hasInputText && isSpinnerVisible ? (
+              <span className="spinner input-pane-spinner" aria-hidden="true" />
+            ) : null}
+            className="fade-in"
+          />
+
+          {hasOutputWords ? (
+            <OutputPane
+              id="output-pane-title"
+              title="Translated Output"
+              showHeader={false}
+              ariaLabel="Translated text"
+              value={outputText}
+              selectionTokens={outputWords.map((token) => ({
+                value: token.word,
+                selectionWord: token.word,
+                selectable: !token.punctuation
+              }))}
+              selectionWordJoiner={isSpaceSeparatedLanguage(targetLanguage) ? " " : ""}
+              animateOnMount
+              footer={selectedLanguageOption?.transliterate ? (
+                <Transliteration
+                  value={outputLiteralText}
+                  isVisible={isTransliterationVisible}
+                  onToggle={() => setIsTransliterationVisible((value) => !value)}
+                />
+              ) : null}
+              enableCopyButton
+              copyValue={outputText}
+              enableAudioButton={!isAudioPlaying}
+              isAudioLoading={isAudioLoading}
+              onAudioClick={() => {
+                if (!outputText.trim()) {
+                  return
+                }
+
+                const cachedAudio = audioCacheRef.current.get(outputText)
+
+                if (cachedAudio) {
+                  playAudio(cachedAudio.audioBase64, cachedAudio.mimeType)
+                  return
+                }
+
+                pendingAudioRequestTextRef.current = outputText
+                clientRef.current?.sendAudioRequest({
+                  text: outputText,
+                  targetLanguage
+                })
+              }}
+              className="fade-in"
+              onSelectionChange={setSelectedOutputWords}
+            />
+          ) : null}
+
+          {shouldShowGrammarPane && (isGrammarLoading || !!grammarExplanation) ? (
+            <GrammarPane
+              id="grammar-pane-title"
               title=""
               showHeader={false}
               animateOnMount
               className="fade-in"
-              ariaLabel={`Definition for ${word}`}
-              value={paneValue}
+              ariaLabel="Grammar explanation"
+              value={grammarExplanation}
             />
-          )
-        })}
-      </section>
+          ) : null}
+
+          {definitionSelectionWords.map((word, index) => {
+            const normalizedWord = normalizeDefinition(word)
+            const definition = definitionByWord.get(normalizedWord) || ""
+            const transliterationKey = normalizedWord || word
+            const rawTransliteration = transliterationByWord.get(transliterationKey) || ""
+            const wordCharacters = Array.from(word)
+            const isCompoundWord = wordCharacters.length > 1
+            const directTransliteration = isCompoundWord
+              ? rawTransliteration
+              : getFormattedLiteral(rawTransliteration, targetLanguage)
+            const isSingleCharacterWord = wordCharacters.length === 1
+            const splitTransliteration = isSingleCharacterWord && isChineseLanguage(targetLanguage)
+              ? getCharacterTransliteration(
+                word,
+                getTransliterationParentWord(word, definitionSelectionWords),
+                transliterationByWord
+              )
+              : ""
+            const transliteration = directTransliteration || splitTransliteration
+            const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration
+            const definitionPrefix = shouldShowTransliterationPrefix
+              ? `${word} (${transliteration})`
+              : word
+            const paneValue = definition ? `${definitionPrefix} — ${definition}` : word
+
+            return (
+              <DefinitionPane
+                key={`definition-pane-${index}`}
+                id={`definition-pane-${index}-title`}
+                title=""
+                showHeader={false}
+                animateOnMount
+                className="fade-in"
+                ariaLabel={`Definition for ${word}`}
+                value={paneValue}
+              />
+            )
+          })}
+        </section>
+      )}
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.4.4
+          v0.5.1
         </span>
       )}
     </main>
