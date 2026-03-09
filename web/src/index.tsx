@@ -897,7 +897,7 @@ const App = () => {
               <button
                 key={category.title}
                 type="button"
-                className="lingo-category-card fade-in"
+                className={`lingo-category-card fade-in${isExpanded ? " is-expanded" : ""}`}
                 aria-expanded={isExpanded}
                 aria-controls={categoryContentId}
                 onClick={() => {
@@ -909,9 +909,9 @@ const App = () => {
                     return [...currentCategories, category.title]
                   })
                 }}
-              >
-                <div>
-                  <div className="lingo-category-copy">
+                >
+                  <div>
+                    <div className="lingo-category-copy">
                     {/* <p className="lingo-category-eyebrow">Category</p> */}
                     <h2 className="lingo-category-title">{category.title}</h2>
                     {/* <p className="lingo-category-description">{category.description}</p> */}
@@ -919,23 +919,28 @@ const App = () => {
                   <span className="lingo-category-toggle-label">
                     {/* {isExpanded ? "Hide characters" : "Show characters"} */}
                   </span>
-                </div>
-
-                {isExpanded ? (
-                  <div id={categoryContentId} className="lingo-category-entry-grid">
-                    {category.entries.map((entry) => {
-                      return (
-                        <div key={entry.id} className="lingo-category-entry">
-                          <p className="lingo-category-character">{entry.character}</p>
-                          <div className="lingo-category-entry-copy">
-                            <p className="lingo-category-entry-meaning">{entry.primaryMeaning}</p>
-                            <p className="lingo-category-entry-pinyin">{entry.primaryPinyin}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
                   </div>
-                ) : null}
+
+                <div
+                  id={categoryContentId}
+                  className={`lingo-category-entry-region${isExpanded ? " is-expanded" : ""}`}
+                >
+                  <div className="lingo-category-entry-region-inner">
+                    <div className="lingo-category-entry-grid">
+                      {category.entries.map((entry) => {
+                        return (
+                          <div key={entry.id} className="lingo-category-entry">
+                            <p className="lingo-category-character">{entry.character}</p>
+                            <div className="lingo-category-entry-copy">
+                              <p className="lingo-category-entry-meaning">{entry.primaryMeaning}</p>
+                              <p className="lingo-category-entry-pinyin">{entry.primaryPinyin}</p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
               </button>
             )
           })}
