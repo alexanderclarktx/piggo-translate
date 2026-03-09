@@ -894,22 +894,23 @@ const App = () => {
             const categoryContentId = `${category.title.toLowerCase().replace(/\s+/g, "-")}-entries`
 
             return (
-              <article key={category.title} className="lingo-category-card fade-in">
-                <button
-                  type="button"
-                  className="lingo-category-toggle"
-                  aria-expanded={isExpanded}
-                  aria-controls={categoryContentId}
-                  onClick={() => {
-                    setExpandedLingoCategories((currentCategories) => {
-                      if (currentCategories.includes(category.title)) {
-                        return currentCategories.filter((title) => title !== category.title)
-                      }
+              <button
+                key={category.title}
+                type="button"
+                className="lingo-category-card fade-in"
+                aria-expanded={isExpanded}
+                aria-controls={categoryContentId}
+                onClick={() => {
+                  setExpandedLingoCategories((currentCategories) => {
+                    if (currentCategories.includes(category.title)) {
+                      return currentCategories.filter((title) => title !== category.title)
+                    }
 
-                      return [...currentCategories, category.title]
-                    })
-                  }}
-                >
+                    return [...currentCategories, category.title]
+                  })
+                }}
+              >
+                <div>
                   <div className="lingo-category-copy">
                     {/* <p className="lingo-category-eyebrow">Category</p> */}
                     <h2 className="lingo-category-title">{category.title}</h2>
@@ -918,7 +919,7 @@ const App = () => {
                   <span className="lingo-category-toggle-label">
                     {/* {isExpanded ? "Hide characters" : "Show characters"} */}
                   </span>
-                </button>
+                </div>
 
                 {isExpanded ? (
                   <div id={categoryContentId} className="lingo-category-entry-grid">
@@ -935,7 +936,7 @@ const App = () => {
                     })}
                   </div>
                 ) : null}
-              </article>
+              </button>
             )
           })}
         </section>

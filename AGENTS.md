@@ -26,6 +26,7 @@ Run these from the repo root:
   - instead create arrow functions
 - never use `export { func, type }`, instead just export them at their definition
 - when there's an `if` statement with just a `return` statement inside, prefer making it one line `if (abc === def) return`
+- in styles.css, maintain separate definitions per class
 
 ## Testing Guidelines
 - No test framework is configured yet. If you add tests, document the tool and command in this file.
