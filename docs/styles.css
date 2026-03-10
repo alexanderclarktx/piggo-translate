@@ -624,13 +624,16 @@ main {
 .definition-pane-value-fade-in {
   display: inline;
   opacity: 0;
-  transition: opacity 400ms ease;
+  filter: blur(0.3px);
+  transition: all 1000ms ease;
   user-select: text;
   -webkit-user-select: text;
 }
 
 .definition-pane-value-fade-in.is-visible {
   opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
 }
 
 .output-pane-text-content-selectable {

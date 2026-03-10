@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react"
-import { getDynamicIntervalDuration } from "./paneUtils"
 
 const definitionSeparator = " — "
 
@@ -24,6 +23,7 @@ type DefinitionPaneProps = {
   title: string
   ariaLabel: string
   value: string
+  prefix?: string
   className?: string
   showHeader: boolean
   animateOnMount?: boolean
@@ -31,10 +31,12 @@ type DefinitionPaneProps = {
 }
 
 const DefinitionPane = ({
-  id, title, ariaLabel, value, className, showHeader, animateOnMount, isEmbedded
+  id, title, ariaLabel, value, prefix, className, showHeader, animateOnMount, isEmbedded
 }: DefinitionPaneProps) => {
   const shouldAnimateOnMountRef = useRef(!!animateOnMount)
-  const initialParts = splitDefinitionValue(value)
+  const initialParts = prefix === undefined
+    ? splitDefinitionValue(value)
+    : { prefixText: prefix, suffixText: value }
   const previousPrefixTextRef = useRef(initialParts.prefixText)
   const paneClassName = [
     "definition-pane",
@@ -45,7 +47,6 @@ const DefinitionPane = ({
   const [prefixText, setPrefixText] = useState(initialParts.prefixText)
   const initialSuffixText = shouldAnimateOnMountRef.current ? "" : initialParts.suffixText
   const [text, setText] = useState(initialSuffixText)
-  const [desiredText, setDesiredText] = useState(initialParts.suffixText)
   const [fadeVersion, setFadeVersion] = useState(0)
   const [isFadeVisible, setIsFadeVisible] = useState(false)
 
@@ -54,7 +55,9 @@ const DefinitionPane = ({
       shouldAnimateOnMountRef.current = false
     }
 
-    const nextParts = splitDefinitionValue(value)
+    const nextParts = prefix === undefined
+      ? splitDefinitionValue(value)
+      : { prefixText: prefix, suffixText: value }
     const didPrefixChange = previousPrefixTextRef.current !== nextParts.prefixText
 
     setPrefixText(nextParts.prefixText)
@@ -63,10 +66,10 @@ const DefinitionPane = ({
       setText("")
     }
 
-    setDesiredText(nextParts.suffixText)
+    setText(nextParts.suffixText)
     setFadeVersion((currentVersion) => currentVersion + 1)
     previousPrefixTextRef.current = nextParts.prefixText
-  }, [value])
+  }, [prefix, value])
 
   useEffect(() => {
     setIsFadeVisible(false)
@@ -81,38 +84,10 @@ const DefinitionPane = ({
   }, [fadeVersion])
 
   useEffect(() => {
-    if (!desiredText) {
+    if (!value) {
       setText("")
     }
-  }, [desiredText])
-
-  useEffect(() => {
-    if (text === desiredText) {
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setText((currentText) => {
-        const nextDesiredText = desiredText
-
-        if (currentText === nextDesiredText) {
-          return currentText
-        }
-
-        const desiredPrefix = nextDesiredText.slice(0, currentText.length)
-
-        if (currentText !== desiredPrefix) {
-          return currentText.slice(0, -1)
-        }
-
-        return nextDesiredText.slice(0, currentText.length + 1)
-      })
-    }, getDynamicIntervalDuration(text, desiredText))
-
-    return () => {
-      window.clearTimeout(timeoutId)
-    }
-  }, [desiredText, text])
+  }, [value])
 
   return (
     <PaneTag

@@ -806,12 +806,10 @@ const App = () => {
     if (!isSocketOpen) return
 
     definitionContextRef.current = outputText
-    missingWords.forEach((word) => {
-      clientRef.current?.sendDefinitionsRequest({
-        word,
-        context: outputText,
-        targetLanguage
-      })
+    clientRef.current?.sendDefinitionsRequest({
+      words: missingWords,
+      context: outputText,
+      targetLanguage
     })
   }, [definitionSelectionWords, isSocketOpen, outputText, targetLanguage])
 
@@ -916,9 +914,9 @@ const App = () => {
       {isPiggoLingoVisible ? (
         <section className="pane-stack lingo-character-grid" aria-label="Piggo Lingo HSK1 words">
           {Hsk1Characters.map(({ id, character, pinyin, definition }) => {
-            const definitionValue = pinyin
-              ? `${character} (${pinyin}) — ${definition}`
-              : `${character} — ${definition}`
+            const definitionPrefix = pinyin
+              ? `${character} (${pinyin}) — `
+              : `${character} — `
 
             return (
               <section
@@ -942,7 +940,8 @@ const App = () => {
                       isEmbedded
                       className="lingo-character-definition"
                       ariaLabel={`Definition for ${character}`}
-                      value={definitionValue}
+                      prefix={definitionPrefix}
+                      value={definition}
                     />
                   )}
                 />
@@ -1060,9 +1059,8 @@ const App = () => {
             const transliteration = directTransliteration || splitTransliteration
             const shouldShowTransliterationPrefix = !!selectedLanguageOption?.transliterate && !!transliteration
             const definitionPrefix = shouldShowTransliterationPrefix
-              ? `${word} (${transliteration})`
-              : word
-            const paneValue = definition ? `${definitionPrefix} — ${definition}` : word
+              ? `${word} (${transliteration}) — `
+              : `${word} — `
 
             return (
               <DefinitionPane
@@ -1073,7 +1071,8 @@ const App = () => {
                 animateOnMount
                 className="fade-in"
                 ariaLabel={`Definition for ${word}`}
-                value={paneValue}
+                prefix={definitionPrefix}
+                value={definition}
               />
             )
           })}
