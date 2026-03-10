@@ -49,7 +49,7 @@ export const OpenAiTranslator = (): Translator => {
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY")
 
   const model = "gpt-realtime-1.5"// "gpt-realtime-1.5"
-  const timeoutMs = 5000
+  const timeoutMs = 10000
   const defaultAudioVoice = "sage" // marin sage
   const defaultAudioFormat = "pcm16"
 
@@ -578,8 +578,6 @@ const buildTranslationInstructions = (targetLanguage: string) => {
 }
 
 const buildDefinitionInstructions = (targetLanguage: string, sentence: string, words: string[]) => {
-  const shouldExplainChineseRadicals = words.some((word) => word.length === 1)
-
   return (
     `You write concise explanations for words.\n` +
     `Write the explanation in english.\n` +
@@ -587,13 +585,11 @@ const buildDefinitionInstructions = (targetLanguage: string, sentence: string, w
     "Describe the etymology, usage, or grammar of each item.\n" +
     `The language of the words to define is ${targetLanguage}.\n` +
     `The surrounding context for the words is: "${sentence}"\n` +
-    "The user message will be JSON with this shape: {\"words\":[\"...\"]}\n" +
     "Return only valid JSON with exactly this shape: {\"definitions\":[{\"word\":\"...\",\"definition\":\"...\"}]}\n" +
     "Return one object for each requested word.\n" +
     "Preserve the original word text exactly.\n" +
     `Keep the definition under 20 words.\n` +
-    (shouldExplainChineseRadicals ? "If a word is a single Chinese character, explain its component radicals.\n" : "") +
-    "It is okay if the definition mentions the word when needed for mapping clarity.\n" +
+    (targetLanguage.startsWith("Chinese") ? "If a word is a single Chinese character, explain its component radicals.\n" : "") +
     "Do not repeat the provided context.\n" +
     "Do not include markdown or code fences."
   )
