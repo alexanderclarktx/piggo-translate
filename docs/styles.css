@@ -56,8 +56,8 @@ body {
 
 .title-icon {
   /* justify-self: center; */
-  width: 2.8rem;
-  height: 2.8rem;
+  width: 3.2rem;
+  height: 3.2rem;
   user-select: none;
   -webkit-user-select: none;
   margin-bottom: -2px;
@@ -71,8 +71,6 @@ body {
 
 .title-icon-button {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
   padding: 0;
   margin: 0;
   border: none;
@@ -84,11 +82,12 @@ body {
 
 .title-icon-button-spinning {
   pointer-events: none;
+  transform: translateY(-2px);
 }
 
 .title-icon-button:hover {
-  transform: scale(1.04);
-  filter: brightness(1.06);
+  transform: translateY(-2px);
+  filter: drop-shadow(0 0px 4px rgba(255, 255, 255, 0.6));
 }
 
 .title-icon-button-spinning:hover {
