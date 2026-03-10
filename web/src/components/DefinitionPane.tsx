@@ -23,6 +23,7 @@ type DefinitionPaneProps = {
   title: string
   ariaLabel: string
   value: string
+  prefix?: string
   className?: string
   showHeader: boolean
   animateOnMount?: boolean
@@ -30,10 +31,12 @@ type DefinitionPaneProps = {
 }
 
 const DefinitionPane = ({
-  id, title, ariaLabel, value, className, showHeader, animateOnMount, isEmbedded
+  id, title, ariaLabel, value, prefix, className, showHeader, animateOnMount, isEmbedded
 }: DefinitionPaneProps) => {
   const shouldAnimateOnMountRef = useRef(!!animateOnMount)
-  const initialParts = splitDefinitionValue(value)
+  const initialParts = prefix === undefined
+    ? splitDefinitionValue(value)
+    : { prefixText: prefix, suffixText: value }
   const previousPrefixTextRef = useRef(initialParts.prefixText)
   const paneClassName = [
     "definition-pane",
@@ -52,7 +55,9 @@ const DefinitionPane = ({
       shouldAnimateOnMountRef.current = false
     }
 
-    const nextParts = splitDefinitionValue(value)
+    const nextParts = prefix === undefined
+      ? splitDefinitionValue(value)
+      : { prefixText: prefix, suffixText: value }
     const didPrefixChange = previousPrefixTextRef.current !== nextParts.prefixText
 
     setPrefixText(nextParts.prefixText)
@@ -64,7 +69,7 @@ const DefinitionPane = ({
     setText(nextParts.suffixText)
     setFadeVersion((currentVersion) => currentVersion + 1)
     previousPrefixTextRef.current = nextParts.prefixText
-  }, [value])
+  }, [prefix, value])
 
   useEffect(() => {
     setIsFadeVisible(false)
