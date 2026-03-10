@@ -62,10 +62,11 @@ body {
   -webkit-user-select: none;
   margin-bottom: -2px;
   transform: rotate(0deg);
+  animation: fade-in-animation 220ms ease-out both;
 }
 
 .title-icon-spinning {
-  animation: title-icon-spin 500ms ease-in-out;
+  animation: fade-in-animation 220ms ease-out both, title-icon-spin 500ms ease-in-out;
 }
 
 .title-icon-button {
