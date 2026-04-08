@@ -1,7 +1,8 @@
 import {
   DefinitionPane, GrammarPane, InputPane, OutputPane, TargetLanguageDropdown,
   Transliteration, normalizeText, normalizeDefinition, Cache, AudioCache, GrammarCache,
-  Client, RequestSnapshot, isLocal, isMobile, readTargetLanguage, writeTargetLanguage
+  Client, RequestSnapshot, copyTextToClipboard, isLocal, isMobile, readTargetLanguage,
+  writeTargetLanguage
 } from "@piggo-translate/web"
 import {
   Hsk1Characters, Languages, WordDefinition, WordToken, splitPinyin, isLanguageCode,
@@ -75,6 +76,54 @@ const getLanguageParamValue = (language: string) => {
   }
 
   return language
+}
+
+const serializeReadableSearchParamPart = (value: string) => {
+  return Array.from(value).map((character) => {
+    const isVisibleUnicodeCharacter = character.charCodeAt(0) > 127 && !/\s/u.test(character)
+    const isSafeAsciiCharacter = /^[a-z0-9\-._~]$/i.test(character)
+
+    if (isVisibleUnicodeCharacter || isSafeAsciiCharacter) {
+      return character
+    }
+
+    return encodeURIComponent(character)
+  }).join("")
+}
+
+const serializeReadableSearchParams = (searchParams: URLSearchParams) => {
+  return Array.from(searchParams.entries()).map(([key, value]) => {
+    return [
+      serializeReadableSearchParamPart(key),
+      serializeReadableSearchParamPart(value)
+    ].join("=")
+  }).join("&")
+}
+
+const getUrlSearchParams = (currentUrl: URL, inputText: string, targetLanguage: string) => {
+  const nextSearchParams = new URLSearchParams(currentUrl.search)
+  const trimmedInputText = inputText.trim()
+  const languageParamValue = getLanguageParamValue(targetLanguage)
+
+  if (trimmedInputText) {
+    nextSearchParams.set("t", trimmedInputText)
+  } else {
+    nextSearchParams.delete("t")
+  }
+
+  if (languageParamValue) {
+    nextSearchParams.set("l", languageParamValue)
+  } else {
+    nextSearchParams.delete("l")
+  }
+
+  return nextSearchParams
+}
+
+const getCopyableUrl = (currentUrl: URL, inputText: string, targetLanguage: string) => {
+  const nextSearchParams = getUrlSearchParams(currentUrl, inputText, targetLanguage)
+  const nextSearch = serializeReadableSearchParams(nextSearchParams)
+  return `${currentUrl.origin}${currentUrl.pathname}${nextSearch ? `?${nextSearch}` : ""}${currentUrl.hash}`
 }
 
 const getUrlPrefillState = () => {
@@ -256,6 +305,8 @@ const App = () => {
   const [isAudioLoading, setIsAudioLoading] = useState(false)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [isConnectionDotDelayComplete, setIsConnectionDotDelayComplete] = useState(false)
+  const [didCopyInputLink, setDidCopyInputLink] = useState(false)
+  const [isInputLinkCopySelected, setIsInputLinkCopySelected] = useState(false)
   const clientRef = useRef<Client | null>(null)
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const pendingInputSelectionRef = useRef<{ start: number, end: number } | null>(null)
@@ -274,6 +325,8 @@ const App = () => {
   const activeAudioSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null)
   const pendingAudioRequestTextRef = useRef("")
   const pendingGrammarRequestTextRef = useRef("")
+  const inputLinkCopyFeedbackTimeoutRef = useRef<number | null>(null)
+  const inputLinkCopySelectedTimeoutRef = useRef<number | null>(null)
 
   const clearAudioPlayback = () => {
     setIsAudioPlaying(false)
@@ -432,6 +485,14 @@ const App = () => {
 
   useEffect(() => {
     return () => {
+      if (inputLinkCopyFeedbackTimeoutRef.current) {
+        window.clearTimeout(inputLinkCopyFeedbackTimeoutRef.current)
+      }
+
+      if (inputLinkCopySelectedTimeoutRef.current) {
+        window.clearTimeout(inputLinkCopySelectedTimeoutRef.current)
+      }
+
       clearAudioPlayback()
 
       if (audioContextRef.current) {
@@ -653,22 +714,7 @@ const App = () => {
     }
 
     const currentUrl = new URL(window.location.href)
-    const nextSearchParams = new URLSearchParams(currentUrl.search)
-    const trimmedInputText = inputText.trim()
-    const languageParamValue = getLanguageParamValue(targetLanguage)
-
-    if (trimmedInputText) {
-      nextSearchParams.set("t", trimmedInputText)
-    } else {
-      nextSearchParams.delete("t")
-    }
-
-    if (languageParamValue) {
-      nextSearchParams.set("l", languageParamValue)
-    } else {
-      nextSearchParams.delete("l")
-    }
-
+    const nextSearchParams = getUrlSearchParams(currentUrl, inputText, targetLanguage)
     const nextSearch = nextSearchParams.toString()
     const currentSearch = currentUrl.search.startsWith("?")
       ? currentUrl.search.slice(1)
@@ -681,6 +727,39 @@ const App = () => {
     const nextUrl = `${currentUrl.pathname}${nextSearch ? `?${nextSearch}` : ""}${currentUrl.hash}`
     window.history.replaceState(null, "", nextUrl)
   }, [inputText, targetLanguage, isTargetLanguageLoaded])
+
+  const copyReadableInputUrl = async () => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    const currentUrl = new URL(window.location.href)
+    const readableUrl = getCopyableUrl(currentUrl, inputText, targetLanguage)
+    const copied = await copyTextToClipboard(readableUrl)
+
+    if (!copied) {
+      return
+    }
+
+    setDidCopyInputLink(true)
+    setIsInputLinkCopySelected(true)
+
+    if (inputLinkCopySelectedTimeoutRef.current) {
+      window.clearTimeout(inputLinkCopySelectedTimeoutRef.current)
+    }
+
+    inputLinkCopySelectedTimeoutRef.current = window.setTimeout(() => {
+      setIsInputLinkCopySelected(false)
+    }, 200)
+
+    if (inputLinkCopyFeedbackTimeoutRef.current) {
+      window.clearTimeout(inputLinkCopyFeedbackTimeoutRef.current)
+    }
+
+    inputLinkCopyFeedbackTimeoutRef.current = window.setTimeout(() => {
+      setDidCopyInputLink(false)
+    }, 1000)
+  }
 
   useEffect(() => {
     const textarea = inputTextareaRef.current
@@ -975,6 +1054,26 @@ const App = () => {
             afterTextarea={hasInputText && isSpinnerVisible ? (
               <span className="spinner input-pane-spinner" aria-hidden="true" />
             ) : null}
+            topLeftAction={(
+              <button
+                type="button"
+                className={`output-pane-action-button${didCopyInputLink ? " output-pane-copy-button-copied" : ""}${isInputLinkCopySelected ? " output-pane-copy-button-selected" : ""}`}
+                aria-label="Copy shareable link"
+                title={didCopyInputLink ? "Copied" : "Copy link"}
+                onPointerDown={(event) => {
+                  event.preventDefault()
+                }}
+                onClick={async () => {
+                  await copyReadableInputUrl()
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 5h6v6" />
+                  <path d="M10 14 20 4" />
+                  <path d="M20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5" />
+                </svg>
+              </button>
+            )}
             className="fade-in"
           />
 
@@ -1081,7 +1180,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.5.4
+          v0.5.5
         </span>
       )}
     </main>
