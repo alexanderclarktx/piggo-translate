@@ -100,12 +100,7 @@ const serializeReadableSearchParams = (searchParams: URLSearchParams) => {
   }).join("&")
 }
 
-const getReadableUrl = (
-  currentUrl: URL,
-  inputText: string,
-  targetLanguage: string,
-  options?: { includeOrigin?: boolean }
-) => {
+const getUrlSearchParams = (currentUrl: URL, inputText: string, targetLanguage: string) => {
   const nextSearchParams = new URLSearchParams(currentUrl.search)
   const trimmedInputText = inputText.trim()
   const languageParamValue = getLanguageParamValue(targetLanguage)
@@ -122,14 +117,13 @@ const getReadableUrl = (
     nextSearchParams.delete("l")
   }
 
+  return nextSearchParams
+}
+
+const getCopyableUrl = (currentUrl: URL, inputText: string, targetLanguage: string) => {
+  const nextSearchParams = getUrlSearchParams(currentUrl, inputText, targetLanguage)
   const nextSearch = serializeReadableSearchParams(nextSearchParams)
-  const pathWithSearch = `${currentUrl.pathname}${nextSearch ? `?${nextSearch}` : ""}${currentUrl.hash}`
-
-  if (!options?.includeOrigin) {
-    return pathWithSearch
-  }
-
-  return `${currentUrl.origin}${pathWithSearch}`
+  return `${currentUrl.origin}${currentUrl.pathname}${nextSearch ? `?${nextSearch}` : ""}${currentUrl.hash}`
 }
 
 const getUrlPrefillState = () => {
@@ -331,7 +325,6 @@ const App = () => {
   const activeAudioSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null)
   const pendingAudioRequestTextRef = useRef("")
   const pendingGrammarRequestTextRef = useRef("")
-  const lastReadableUrlRef = useRef("")
   const inputLinkCopyFeedbackTimeoutRef = useRef<number | null>(null)
   const inputLinkCopySelectedTimeoutRef = useRef<number | null>(null)
 
@@ -721,13 +714,17 @@ const App = () => {
     }
 
     const currentUrl = new URL(window.location.href)
-    const nextUrl = getReadableUrl(currentUrl, inputText, targetLanguage)
+    const nextSearchParams = getUrlSearchParams(currentUrl, inputText, targetLanguage)
+    const nextSearch = nextSearchParams.toString()
+    const currentSearch = currentUrl.search.startsWith("?")
+      ? currentUrl.search.slice(1)
+      : currentUrl.search
 
-    if (lastReadableUrlRef.current === nextUrl) {
+    if (nextSearch === currentSearch) {
       return
     }
 
-    lastReadableUrlRef.current = nextUrl
+    const nextUrl = `${currentUrl.pathname}${nextSearch ? `?${nextSearch}` : ""}${currentUrl.hash}`
     window.history.replaceState(null, "", nextUrl)
   }, [inputText, targetLanguage, isTargetLanguageLoaded])
 
@@ -737,7 +734,7 @@ const App = () => {
     }
 
     const currentUrl = new URL(window.location.href)
-    const readableUrl = getReadableUrl(currentUrl, inputText, targetLanguage, { includeOrigin: true })
+    const readableUrl = getCopyableUrl(currentUrl, inputText, targetLanguage)
     const copied = await copyTextToClipboard(readableUrl)
 
     if (!copied) {
@@ -1183,7 +1180,7 @@ const App = () => {
 
       {isLocal() && !isMobile() && (
         <span className="app-version" aria-label="App version">
-          v0.5.4
+          v0.5.5
         </span>
       )}
     </main>
